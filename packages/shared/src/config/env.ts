@@ -43,6 +43,7 @@ const envSchema = z.object({
   MAX_OPEN_TRADES: numberString(1),
   MIN_CONFIDENCE_SCORE: numberString(75),
   MAX_TRADES_PER_DAY: numberString(3),
+  WORKER_INTERVAL_SECONDS: numberString(60),
   BOT_ENABLED: booleanString.default("true"),
   KILL_SWITCH: booleanString,
   DATABASE_URL: z.string().optional(),
@@ -56,4 +57,3 @@ export type AppConfig = z.infer<typeof envSchema>;
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   return envSchema.parse(env);
 }
-

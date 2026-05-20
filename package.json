@@ -10,7 +10,7 @@
   "scripts": {
     "build": "npm run build --workspace @tradeplatformcodex/shared && npm run build --workspace @tradeplatformcodex/worker && npm run build --workspace @tradeplatformcodex/web",
     "dev": "npm run dev --workspace @tradeplatformcodex/web",
-    "lint": "npm run lint --workspace @tradeplatformcodex/shared && npm run lint --workspace @tradeplatformcodex/worker && npm run lint --workspace @tradeplatformcodex/web",
+    "lint": "npm run build --workspace @tradeplatformcodex/shared && npm run lint --workspace @tradeplatformcodex/shared && npm run lint --workspace @tradeplatformcodex/worker && npm run lint --workspace @tradeplatformcodex/web",
     "worker": "npm run worker --workspace @tradeplatformcodex/worker",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -36,4 +36,3 @@
     "vitest": "^2.1.4"
   }
 }
-

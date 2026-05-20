@@ -9,6 +9,7 @@ import { generateSignals } from "./strategies/scoring-engine";
 
 const config = loadConfig();
 const client = new MEXCMarketDataClient();
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function persistSignal(signal: TradingSignal): Promise<string> {
   const created = await prisma.signal.create({
@@ -63,11 +64,27 @@ export async function runWorkerCycle(): Promise<void> {
   });
 }
 
-runWorkerCycle()
-  .catch(async (error: unknown) => {
-    await logBot("error", "Worker cycle failed", { error: error instanceof Error ? error.message : "unknown error" });
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
+async function runWorkerLoop(): Promise<void> {
+  await logBot("info", "Worker loop started", {
+    symbol: "BTCUSDT",
+    intervalSeconds: config.WORKER_INTERVAL_SECONDS
   });
+
+  while (true) {
+    try {
+      await runWorkerCycle();
+    } catch (error: unknown) {
+      await logBot("error", "Worker cycle failed", {
+        error: error instanceof Error ? error.message : "unknown error"
+      });
+    }
+
+    await sleep(config.WORKER_INTERVAL_SECONDS * 1000);
+  }
+}
+
+runWorkerLoop().catch(async (error: unknown) => {
+  await logBot("error", "Worker loop crashed", { error: error instanceof Error ? error.message : "unknown error" });
+  await prisma.$disconnect();
+  process.exitCode = 1;
+});
