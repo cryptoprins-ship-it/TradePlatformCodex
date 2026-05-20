@@ -8,6 +8,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/index.js",
     "worker": "tsx src/index.ts",
     "test": "vitest run"
   },
@@ -23,4 +24,3 @@
     "vitest": "^2.1.4"
   }
 }
-

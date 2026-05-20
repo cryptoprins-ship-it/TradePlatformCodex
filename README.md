@@ -50,7 +50,38 @@ docker compose up -d
 docker compose logs -f
 ```
 
-The `app` service exposes port `3000`. PostgreSQL and Redis are internal services.
+The `app` service exposes port `3000` for local use. PostgreSQL and Redis are internal services. The `worker` service runs the BTCUSDT papertrading cycle.
+
+Create the database schema before first use:
+
+```bash
+docker compose run --rm app npx prisma db push
+```
+
+## VPS With Traefik
+
+If Traefik already runs on the VPS, attach this stack to the Traefik Docker network:
+
+```bash
+cp .env.example .env
+nano .env
+docker network ls
+TRAEFIK_HOST=tradingplatformcodex.mpsecurity.cloud docker compose -f docker-compose.yml -f docker-compose.traefik.yml config
+TRAEFIK_HOST=tradingplatformcodex.mpsecurity.cloud docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d --build
+docker compose run --rm app npx prisma db push
+docker compose logs -f app worker
+```
+
+If your Traefik network or cert resolver has a different name, set these in `.env` or before the command:
+
+```env
+TRAEFIK_NETWORK=traefik
+TRAEFIK_CERT_RESOLVER=letsencrypt
+TRAEFIK_ENTRYPOINT=websecure
+TRAEFIK_HOST=tradingplatformcodex.mpsecurity.cloud
+```
+
+Keep `TRADING_MODE=paper` and `ENABLE_LIVE_TRADING=false` on the VPS.
 
 ## Environment
 
