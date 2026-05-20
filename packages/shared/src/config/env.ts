@@ -1,0 +1,59 @@
+import { z } from "zod";
+
+const booleanString = z
+  .string()
+  .default("false")
+  .transform((value) => value.toLowerCase() === "true");
+
+const numberString = (defaultValue: number) =>
+  z
+    .string()
+    .default(String(defaultValue))
+    .transform((value, ctx) => {
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Expected numeric value" });
+        return z.NEVER;
+      }
+      return parsed;
+    });
+
+const envSchema = z.object({
+  APP_NAME: z.string().default("TradePlatformCodex"),
+  NODE_ENV: z.string().default("development"),
+  TRADING_MODE: z.literal("paper").default("paper"),
+  ENABLE_LIVE_TRADING: booleanString.refine((value) => value === false, {
+    message: "Live trading is disabled in phase 1A"
+  }),
+  EXCHANGE: z.literal("MEXC").default("MEXC"),
+  SYMBOLS: z
+    .string()
+    .default("BTCUSDT")
+    .transform((value) => value.split(",").map((symbol) => symbol.trim()).filter(Boolean))
+    .refine((symbols) => symbols.length === 1 && symbols[0] === "BTCUSDT", {
+      message: "Phase 1A supports BTCUSDT only"
+    }),
+  TIMEFRAMES: z
+    .string()
+    .default("5m,15m,1h,4h")
+    .transform((value) => value.split(",").map((timeframe) => timeframe.trim()).filter(Boolean)),
+  START_BALANCE: numberString(10000),
+  MAX_RISK_PER_TRADE: numberString(1),
+  MAX_DAILY_LOSS: numberString(3),
+  MAX_OPEN_TRADES: numberString(1),
+  MIN_CONFIDENCE_SCORE: numberString(75),
+  MAX_TRADES_PER_DAY: numberString(3),
+  BOT_ENABLED: booleanString.default("true"),
+  KILL_SWITCH: booleanString,
+  DATABASE_URL: z.string().optional(),
+  REDIS_URL: z.string().default("redis://redis:6379"),
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_CHAT_ID: z.string().optional()
+});
+
+export type AppConfig = z.infer<typeof envSchema>;
+
+export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
+  return envSchema.parse(env);
+}
+
