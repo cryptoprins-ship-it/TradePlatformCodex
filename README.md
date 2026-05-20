@@ -66,10 +66,11 @@ If Traefik already runs on the VPS, attach this stack to the Traefik Docker netw
 cp .env.example .env
 nano .env
 docker network ls
-TRAEFIK_HOST=tradingplatformcodex.mpsecurity.cloud docker compose -f docker-compose.yml -f docker-compose.traefik.yml config
-TRAEFIK_HOST=tradingplatformcodex.mpsecurity.cloud docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d --build
-docker compose run --rm app npx prisma db push
-docker compose logs -f app worker
+TRAEFIK_HOST=tradingplatformcodex.mpsecurity.cloud docker compose -f docker-compose.vps.yml config
+TRAEFIK_HOST=tradingplatformcodex.mpsecurity.cloud docker compose -f docker-compose.vps.yml up -d --build db redis
+TRAEFIK_HOST=tradingplatformcodex.mpsecurity.cloud docker compose -f docker-compose.vps.yml run --rm app npx prisma db push
+TRAEFIK_HOST=tradingplatformcodex.mpsecurity.cloud docker compose -f docker-compose.vps.yml up -d --build app worker
+TRAEFIK_HOST=tradingplatformcodex.mpsecurity.cloud docker compose -f docker-compose.vps.yml logs -f app worker
 ```
 
 If your Traefik network or cert resolver has a different name, set these in `.env` or before the command:

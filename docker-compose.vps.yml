@@ -1,0 +1,67 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://tradingplatformcodex:change_me@db:5432/tradingplatformcodex
+      REDIS_URL: redis://redis:6379
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.tradeplatformcodex.rule=Host(`${TRAEFIK_HOST:-tradingplatformcodex.mpsecurity.cloud}`)
+      - traefik.http.routers.tradeplatformcodex.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.tradeplatformcodex.tls=true
+      - traefik.http.routers.tradeplatformcodex.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
+      - traefik.http.services.tradeplatformcodex.loadbalancer.server.port=3000
+    depends_on:
+      - db
+      - redis
+    networks:
+      - default
+      - traefik
+
+  worker:
+    build: .
+    restart: unless-stopped
+    command: ["npm", "run", "start", "--workspace", "@tradeplatformcodex/worker"]
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://tradingplatformcodex:change_me@db:5432/tradingplatformcodex
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tradingplatformcodex
+      POSTGRES_USER: tradingplatformcodex
+      POSTGRES_PASSWORD: change_me
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradingplatformcodex -d tradingplatformcodex"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik}
