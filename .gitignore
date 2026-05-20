@@ -7,9 +7,8 @@ dist/
 build/
 coverage/
 *.log
-logs/
+/logs/
 .DS_Store
 Thumbs.db
 prisma/dev.db
 *.tsbuildinfo
-
