@@ -5,7 +5,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://tradingplatformcodex:change_me@db:5432/tradingplatformcodex
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tradingplatformcodex}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-tradingplatformcodex}
       REDIS_URL: redis://redis:6379
     labels:
       - traefik.enable=true
@@ -28,7 +28,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://tradingplatformcodex:change_me@db:5432/tradingplatformcodex
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tradingplatformcodex}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-tradingplatformcodex}
       REDIS_URL: redis://redis:6379
     depends_on:
       - db
@@ -38,9 +38,9 @@ services:
     image: postgres:16
     restart: unless-stopped
     environment:
-      POSTGRES_DB: tradingplatformcodex
-      POSTGRES_USER: tradingplatformcodex
-      POSTGRES_PASSWORD: change_me
+      POSTGRES_DB: ${POSTGRES_DB:-tradingplatformcodex}
+      POSTGRES_USER: ${POSTGRES_USER:-tradingplatformcodex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

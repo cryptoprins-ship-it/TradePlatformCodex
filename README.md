@@ -83,6 +83,7 @@ TRAEFIK_HOST=tradingplatformcodex.mpsecurity.cloud
 ```
 
 Keep `TRADING_MODE=paper` and `ENABLE_LIVE_TRADING=false` on the VPS.
+Change `POSTGRES_PASSWORD` in `.env` before first startup.
 
 ## Environment
 
