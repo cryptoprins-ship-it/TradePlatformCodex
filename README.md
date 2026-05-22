@@ -107,10 +107,11 @@ The worker performs one safe papertrading cycle:
 3. Store candles idempotently.
 4. Generate LONG/SHORT signals for `5m` and `15m`.
 5. Score EMA200, RSI, MACD, volume, wick/shakeout and multi-timeframe context.
-6. Store every signal, including skipped signals.
-7. Enforce risk checks before opening a papertrade.
-8. Monitor open papertrades against current price.
-9. Send Telegram alerts when configured.
+6. Apply the Markov regime filter to penalize trades against the current 1h/4h regime or during volatile chop.
+7. Store every signal, including skipped signals.
+8. Enforce risk checks before opening a papertrade.
+9. Monitor open papertrades against current price.
+10. Send Telegram alerts when configured.
 
 ## Risk Defaults
 
@@ -121,9 +122,14 @@ MAX_OPEN_TRADES=1
 MIN_CONFIDENCE_SCORE=75
 MAX_TRADES_PER_DAY=3
 KILL_SWITCH=false
+MARKOV_REGIME_ENABLED=true
+MARKOV_REGIME_PENALTY=25
+MARKOV_REGIME_VOLATILE_PENALTY=35
 ```
 
 If `KILL_SWITCH=true`, new papertrades are blocked and a bot log is created.
+
+The Markov regime filter does not open trades by itself. It classifies recent 1h and 4h BTCUSDT returns as `BULL`, `BEAR`, `SIDEWAYS` or `VOLATILE`, then subtracts score from signals that fight the regime. Volatile regimes receive the larger penalty so noisy market conditions are more likely to be recorded as skipped signals instead of opened papertrades.
 
 ## VPS Notes
 

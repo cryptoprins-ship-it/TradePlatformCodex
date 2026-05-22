@@ -51,7 +51,7 @@ export async function runWorkerCycle(): Promise<void> {
   const currentPrice = await client.getTickerPrice("BTCUSDT");
   await monitorOpenPaperTrades(currentPrice);
 
-  const signals = generateSignals(candlesByTimeframe);
+  const signals = generateSignals(config, candlesByTimeframe);
   for (const signal of signals) {
     const signalId = await persistSignal(signal);
     await sendTelegram(config, formatSignalAlert(signal));

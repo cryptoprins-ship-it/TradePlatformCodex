@@ -1,5 +1,14 @@
-import { average, round, type Candle, type ModuleScore, type Timeframe, type TradingSignal } from "@tradeplatformcodex/shared";
+import {
+  average,
+  round,
+  type AppConfig,
+  type Candle,
+  type ModuleScore,
+  type Timeframe,
+  type TradingSignal
+} from "@tradeplatformcodex/shared";
 import { ema, hasBearishShakeout, hasBullishShakeout, macd, rsi } from "./indicators";
+import { assessMarkovRegime } from "./markov-regime";
 
 type CandleMap = Record<Timeframe, Candle[]>;
 
@@ -78,22 +87,37 @@ function timeframeScore(candlesByTimeframe: CandleMap, direction: "LONG" | "SHOR
   };
 }
 
-function buildSignal(candlesByTimeframe: CandleMap, timeframe: "5m" | "15m", direction: "LONG" | "SHORT"): TradingSignal {
+function clampScore(score: number): number {
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function buildSignal(
+  config: AppConfig,
+  candlesByTimeframe: CandleMap,
+  timeframe: "5m" | "15m",
+  direction: "LONG" | "SHORT"
+): TradingSignal {
   const candles = candlesByTimeframe[timeframe];
   const entryPrice = latestClose(candles);
   const atrProxy = Math.max(entryPrice * 0.004, (candles.at(-1)?.high ?? entryPrice) - (candles.at(-1)?.low ?? entryPrice));
   const stopLoss = direction === "LONG" ? entryPrice - atrProxy : entryPrice + atrProxy;
   const takeProfit1 = direction === "LONG" ? entryPrice + atrProxy * 1.5 : entryPrice - atrProxy * 1.5;
   const takeProfit2 = direction === "LONG" ? entryPrice + atrProxy * 2.5 : entryPrice - atrProxy * 2.5;
+  const markovRegime = assessMarkovRegime(candlesByTimeframe["1h"], candlesByTimeframe["4h"], direction, {
+    enabled: config.MARKOV_REGIME_ENABLED,
+    penalty: config.MARKOV_REGIME_PENALTY,
+    volatilePenalty: config.MARKOV_REGIME_VOLATILE_PENALTY
+  });
   const moduleScores = [
     trendScore(candles, direction),
     rsiScore(candles, direction),
     macdScore(candles, direction),
     volumeScore(candles),
     wickScore(candles, direction),
-    timeframeScore(candlesByTimeframe, direction)
+    timeframeScore(candlesByTimeframe, direction),
+    markovRegime.moduleScore
   ];
-  const score = moduleScores.reduce((sum, module) => sum + module.score, 0);
+  const score = clampScore(moduleScores.reduce((sum, module) => sum + module.score, 0));
   const reason = moduleScores.map((module) => module.reason).join("; ");
 
   return {
@@ -110,10 +134,10 @@ function buildSignal(candlesByTimeframe: CandleMap, timeframe: "5m" | "15m", dir
   };
 }
 
-export function generateSignals(candlesByTimeframe: CandleMap): TradingSignal[] {
+export function generateSignals(config: AppConfig, candlesByTimeframe: CandleMap): TradingSignal[] {
   const entryTimeframes = ["5m", "15m"] as const;
   return entryTimeframes.flatMap((timeframe) => [
-    buildSignal(candlesByTimeframe, timeframe, "LONG"),
-    buildSignal(candlesByTimeframe, timeframe, "SHORT")
+    buildSignal(config, candlesByTimeframe, timeframe, "LONG"),
+    buildSignal(config, candlesByTimeframe, timeframe, "SHORT")
   ]);
 }

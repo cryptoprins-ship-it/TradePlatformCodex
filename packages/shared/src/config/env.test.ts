@@ -11,6 +11,8 @@ describe("loadConfig", () => {
     expect(config.TRADING_MODE).toBe("paper");
     expect(config.ENABLE_LIVE_TRADING).toBe(false);
     expect(config.SYMBOLS).toEqual(["BTCUSDT"]);
+    expect(config.MARKOV_REGIME_ENABLED).toBe(true);
+    expect(config.MARKOV_REGIME_PENALTY).toBe(25);
   });
 
   it("rejects extra symbols in phase 1A", () => {
@@ -31,4 +33,3 @@ describe("loadConfig", () => {
     ).toThrow();
   });
 });
-
