@@ -66,7 +66,7 @@ function wickScore(candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore 
   const aligned = direction === "LONG" ? hasBullishShakeout(candles) : hasBearishShakeout(candles);
   return {
     module: "Wick shakeout",
-    score: aligned ? 20 : 5,
+    score: aligned ? 20 : 0,
     reason: aligned ? `${direction.toLowerCase()} liquidity sweep detected` : "no clean liquidity sweep"
   };
 }
@@ -91,6 +91,20 @@ function clampScore(score: number): number {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
+function setupQualityGate(hasLiquiditySweep: boolean, rawScore: number): ModuleScore {
+  const cappedRawScore = clampScore(rawScore);
+  const maxScoreWithoutSweep = 74;
+  const penalty = hasLiquiditySweep ? 0 : Math.min(0, maxScoreWithoutSweep - cappedRawScore);
+
+  return {
+    module: "Setup quality gate",
+    score: penalty,
+    reason: hasLiquiditySweep
+      ? "liquidity sweep confirms entry trigger"
+      : `liquidity sweep required before papertrade; score capped at ${maxScoreWithoutSweep}`
+  };
+}
+
 function buildSignal(
   config: AppConfig,
   candlesByTimeframe: CandleMap,
@@ -108,15 +122,18 @@ function buildSignal(
     penalty: config.MARKOV_REGIME_PENALTY,
     volatilePenalty: config.MARKOV_REGIME_VOLATILE_PENALTY
   });
-  const moduleScores = [
+  const wick = wickScore(candles, direction);
+  const preliminaryScores = [
     trendScore(candles, direction),
     rsiScore(candles, direction),
     macdScore(candles, direction),
     volumeScore(candles),
-    wickScore(candles, direction),
+    wick,
     timeframeScore(candlesByTimeframe, direction),
     markovRegime.moduleScore
   ];
+  const rawScore = preliminaryScores.reduce((sum, module) => sum + module.score, 0);
+  const moduleScores = [...preliminaryScores, setupQualityGate(wick.score > 0, rawScore)];
   const score = clampScore(moduleScores.reduce((sum, module) => sum + module.score, 0));
   const reason = moduleScores.map((module) => module.reason).join("; ");
 
