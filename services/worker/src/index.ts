@@ -1,6 +1,6 @@
-import { loadConfig, type Timeframe, type TradingSignal } from "@tradeplatformcodex/shared";
+import { loadConfig, type SupportedSymbol, type Timeframe, type TradingSignal } from "@tradeplatformcodex/shared";
 import { sendTelegram, formatSignalAlert } from "./alerts/telegram";
-import { ensureBtcSymbol, storeCandles } from "./market-data/candle-store";
+import { ensureSymbols, storeCandles } from "./market-data/candle-store";
 import { MEXCMarketDataClient } from "./market-data/mexc-client";
 import { openPaperTrade, monitorOpenPaperTrades } from "./papertrading/papertrading-engine";
 import { prisma } from "./db";
@@ -32,41 +32,53 @@ async function persistSignal(signal: TradingSignal): Promise<string> {
 }
 
 export async function runWorkerCycle(): Promise<void> {
-  await ensureBtcSymbol();
+  const symbols = config.SYMBOLS as SupportedSymbol[];
+  await ensureSymbols(symbols);
   if (config.KILL_SWITCH) {
     await logBot("warn", "KILL_SWITCH active: new trades blocked");
     await sendTelegram(config, "KILL_SWITCH active: new trades blocked");
   }
 
-  const candlesByTimeframe = Object.fromEntries(
-    await Promise.all(
-      (config.TIMEFRAMES as Timeframe[]).map(async (timeframe) => {
-        const candles = await client.getCandles("BTCUSDT", timeframe);
-        await storeCandles(candles);
-        return [timeframe, candles] as const;
-      })
-    )
-  ) as Record<Timeframe, Awaited<ReturnType<MEXCMarketDataClient["getCandles"]>>>;
+  let signalCount = 0;
+  for (const symbol of symbols) {
+    try {
+      const candlesByTimeframe = Object.fromEntries(
+        await Promise.all(
+          (config.TIMEFRAMES as Timeframe[]).map(async (timeframe) => {
+            const candles = await client.getCandles(symbol, timeframe);
+            await storeCandles(candles);
+            return [timeframe, candles] as const;
+          })
+        )
+      ) as Record<Timeframe, Awaited<ReturnType<MEXCMarketDataClient["getCandles"]>>>;
 
-  const currentPrice = await client.getTickerPrice("BTCUSDT");
-  await monitorOpenPaperTrades(currentPrice);
+      const currentPrice = await client.getTickerPrice(symbol);
+      await monitorOpenPaperTrades(symbol, currentPrice);
 
-  const signals = generateSignals(config, candlesByTimeframe);
-  for (const signal of signals) {
-    const signalId = await persistSignal(signal);
-    await sendTelegram(config, formatSignalAlert(signal));
-    await openPaperTrade(config, { ...signal, signalId });
+      const signals = generateSignals(config, symbol, candlesByTimeframe);
+      signalCount += signals.length;
+      for (const signal of signals) {
+        const signalId = await persistSignal(signal);
+        await sendTelegram(config, formatSignalAlert(signal));
+        await openPaperTrade(config, { ...signal, signalId });
+      }
+    } catch (error: unknown) {
+      await logBot("error", "Worker symbol cycle failed", {
+        symbol,
+        error: error instanceof Error ? error.message : "unknown error"
+      });
+    }
   }
 
   await logBot("info", "Worker cycle completed", {
-    symbol: "BTCUSDT",
-    signals: signals.length
+    symbols,
+    signals: signalCount
   });
 }
 
 async function runWorkerLoop(): Promise<void> {
   await logBot("info", "Worker loop started", {
-    symbol: "BTCUSDT",
+    symbols: config.SYMBOLS,
     intervalSeconds: config.WORKER_INTERVAL_SECONDS
   });
 

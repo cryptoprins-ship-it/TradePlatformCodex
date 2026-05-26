@@ -1,20 +1,33 @@
-import type { Candle } from "@tradeplatformcodex/shared";
+import type { Candle, SupportedSymbol } from "@tradeplatformcodex/shared";
 import { prisma } from "../db";
 
-export async function ensureBtcSymbol(): Promise<void> {
-  await prisma.symbol.upsert({
-    where: { symbol: "BTCUSDT" },
-    create: {
-      symbol: "BTCUSDT",
-      baseAsset: "BTC",
-      quoteAsset: "USDT",
-      riskClass: "CORE"
-    },
-    update: {
-      isActive: true,
-      riskClass: "CORE"
-    }
-  });
+function symbolMeta(symbol: SupportedSymbol): { baseAsset: string; quoteAsset: string; riskClass: string } {
+  const baseAsset = symbol.replace(/USDT$/, "");
+  const coreSymbols: SupportedSymbol[] = ["BTCUSDT", "ETHUSDT"];
+  return {
+    baseAsset,
+    quoteAsset: "USDT",
+    riskClass: coreSymbols.includes(symbol) ? "CORE" : "ALT"
+  };
+}
+
+export async function ensureSymbols(symbols: SupportedSymbol[]): Promise<void> {
+  for (const symbol of symbols) {
+    const meta = symbolMeta(symbol);
+    await prisma.symbol.upsert({
+      where: { symbol },
+      create: {
+        symbol,
+        baseAsset: meta.baseAsset,
+        quoteAsset: meta.quoteAsset,
+        riskClass: meta.riskClass
+      },
+      update: {
+        isActive: true,
+        riskClass: meta.riskClass
+      }
+    });
+  }
 }
 
 export async function storeCandles(candles: Candle[]): Promise<void> {
@@ -39,4 +52,3 @@ export async function storeCandles(candles: Candle[]): Promise<void> {
     });
   }
 }
-

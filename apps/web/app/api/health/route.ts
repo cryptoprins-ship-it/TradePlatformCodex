@@ -6,7 +6,7 @@ export function GET() {
   return NextResponse.json({
     status: "ok",
     app: config.APP_NAME,
-    symbol: config.SYMBOLS[0],
+    symbols: config.SYMBOLS,
     tradingMode: config.TRADING_MODE,
     liveTrading: config.ENABLE_LIVE_TRADING,
     killSwitch: config.KILL_SWITCH

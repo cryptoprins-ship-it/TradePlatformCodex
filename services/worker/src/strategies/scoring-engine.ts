@@ -4,6 +4,7 @@ import {
   type AppConfig,
   type Candle,
   type ModuleScore,
+  type SupportedSymbol,
   type Timeframe,
   type TradingSignal
 } from "@tradeplatformcodex/shared";
@@ -107,6 +108,7 @@ function setupQualityGate(hasLiquiditySweep: boolean, rawScore: number): ModuleS
 
 function buildSignal(
   config: AppConfig,
+  symbol: SupportedSymbol,
   candlesByTimeframe: CandleMap,
   timeframe: "5m" | "15m",
   direction: "LONG" | "SHORT"
@@ -138,7 +140,7 @@ function buildSignal(
   const reason = moduleScores.map((module) => module.reason).join("; ");
 
   return {
-    symbol: "BTCUSDT",
+    symbol,
     timeframe,
     direction,
     score,
@@ -151,10 +153,10 @@ function buildSignal(
   };
 }
 
-export function generateSignals(config: AppConfig, candlesByTimeframe: CandleMap): TradingSignal[] {
+export function generateSignals(config: AppConfig, symbol: SupportedSymbol, candlesByTimeframe: CandleMap): TradingSignal[] {
   const entryTimeframes = ["5m", "15m"] as const;
   return entryTimeframes.flatMap((timeframe) => [
-    buildSignal(config, candlesByTimeframe, timeframe, "LONG"),
-    buildSignal(config, candlesByTimeframe, timeframe, "SHORT")
+    buildSignal(config, symbol, candlesByTimeframe, timeframe, "LONG"),
+    buildSignal(config, symbol, candlesByTimeframe, timeframe, "SHORT")
   ]);
 }

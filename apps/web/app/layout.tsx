@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "TradePlatformCodex",
-  description: "BTCUSDT papertrading dashboard"
+  description: "Multi-symbol papertrading dashboard"
 };
 
 const navItems = [
@@ -36,4 +36,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-

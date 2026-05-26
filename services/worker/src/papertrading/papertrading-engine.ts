@@ -1,4 +1,4 @@
-import { type AppConfig, type PaperTradeInput } from "@tradeplatformcodex/shared";
+import { type AppConfig, type PaperTradeInput, type SupportedSymbol } from "@tradeplatformcodex/shared";
 import { prisma } from "../db";
 import { logBot } from "../logging/bot-log";
 import { evaluateRisk } from "../risk/risk-manager";
@@ -56,8 +56,8 @@ export async function openPaperTrade(config: AppConfig, signal: PaperTradeInput)
   return trade.id;
 }
 
-export async function monitorOpenPaperTrades(currentPrice: number): Promise<void> {
-  const openTrades = await prisma.trade.findMany({ where: { status: { in: ["OPEN", "TP1_HIT"] } } });
+export async function monitorOpenPaperTrades(symbol: SupportedSymbol, currentPrice: number): Promise<void> {
+  const openTrades = await prisma.trade.findMany({ where: { symbol, status: { in: ["OPEN", "TP1_HIT"] } } });
   for (const trade of openTrades) {
     const entry = Number(trade.entryPrice);
     const stopLoss = Number(trade.stopLoss);

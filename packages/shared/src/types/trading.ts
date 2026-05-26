@@ -2,9 +2,10 @@ export type Timeframe = "5m" | "15m" | "1h" | "4h";
 export type Direction = "LONG" | "SHORT";
 export type SignalStatus = "DETECTED" | "TRADE_OPENED" | "SKIPPED";
 export type TradeStatus = "OPEN" | "TP1_HIT" | "TP2_HIT" | "STOP_LOSS_HIT" | "CLOSED" | "CANCELLED" | "SKIPPED";
+export type SupportedSymbol = "BTCUSDT" | "ETHUSDT" | "SOLUSDT" | "XRPUSDT" | "WLDUSDT";
 
 export interface Candle {
-  symbol: "BTCUSDT";
+  symbol: SupportedSymbol;
   timeframe: Timeframe;
   openTime: Date;
   closeTime: Date;
@@ -22,7 +23,7 @@ export interface ModuleScore {
 }
 
 export interface TradingSignal {
-  symbol: "BTCUSDT";
+  symbol: SupportedSymbol;
   timeframe: Timeframe;
   direction: Direction;
   score: number;
@@ -42,4 +43,3 @@ export interface RiskSnapshot {
   allowed: boolean;
   reasons: string[];
 }
-

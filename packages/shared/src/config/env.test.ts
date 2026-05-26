@@ -15,11 +15,20 @@ describe("loadConfig", () => {
     expect(config.MARKOV_REGIME_PENALTY).toBe(25);
   });
 
-  it("rejects extra symbols in phase 1A", () => {
+  it("allows configured multi-symbol papertrading list", () => {
+    const config = loadConfig({
+      ENABLE_LIVE_TRADING: "false",
+      SYMBOLS: "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,WLDUSDT"
+    });
+
+    expect(config.SYMBOLS).toEqual(["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "WLDUSDT"]);
+  });
+
+  it("rejects unsupported symbols", () => {
     expect(() =>
       loadConfig({
         ENABLE_LIVE_TRADING: "false",
-        SYMBOLS: "BTCUSDT,ETHUSDT"
+        SYMBOLS: "BTCUSDT,DOGEUSDT"
       })
     ).toThrow();
   });

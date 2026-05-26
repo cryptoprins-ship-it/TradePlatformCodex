@@ -1,4 +1,4 @@
-import type { Candle, Timeframe } from "@tradeplatformcodex/shared";
+import type { Candle, SupportedSymbol, Timeframe } from "@tradeplatformcodex/shared";
 
 const MEXC_BASE_URL = "https://api.mexc.com";
 const INTERVAL_MAP: Record<Timeframe, string> = {
@@ -20,7 +20,7 @@ type MEXCKline = [
 ];
 
 export class MEXCMarketDataClient {
-  async getCandles(symbol: "BTCUSDT", timeframe: Timeframe, limit = 250): Promise<Candle[]> {
+  async getCandles(symbol: SupportedSymbol, timeframe: Timeframe, limit = 250): Promise<Candle[]> {
     const params = new URLSearchParams({
       symbol,
       interval: INTERVAL_MAP[timeframe],
@@ -48,7 +48,7 @@ export class MEXCMarketDataClient {
     }));
   }
 
-  async getTickerPrice(symbol: "BTCUSDT"): Promise<number> {
+  async getTickerPrice(symbol: SupportedSymbol): Promise<number> {
     const params = new URLSearchParams({ symbol });
     const response = await fetch(`${MEXC_BASE_URL}/api/v3/ticker/price?${params.toString()}`);
     if (!response.ok) {
@@ -58,4 +58,3 @@ export class MEXCMarketDataClient {
     return Number(data.price);
   }
 }
-

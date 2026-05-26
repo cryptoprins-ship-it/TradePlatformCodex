@@ -1,4 +1,7 @@
 import { z } from "zod";
+import type { SupportedSymbol } from "../types/trading";
+
+export const SUPPORTED_SYMBOLS: SupportedSymbol[] = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "WLDUSDT"];
 
 const booleanString = z
   .string()
@@ -30,8 +33,8 @@ const envSchema = z.object({
     .string()
     .default("BTCUSDT")
     .transform((value) => value.split(",").map((symbol) => symbol.trim()).filter(Boolean))
-    .refine((symbols) => symbols.length === 1 && symbols[0] === "BTCUSDT", {
-      message: "Phase 1A supports BTCUSDT only"
+    .refine((symbols): symbols is SupportedSymbol[] => symbols.length > 0 && symbols.every((symbol) => SUPPORTED_SYMBOLS.includes(symbol as SupportedSymbol)), {
+      message: `Supported symbols: ${SUPPORTED_SYMBOLS.join(",")}`
     }),
   TIMEFRAMES: z
     .string()
