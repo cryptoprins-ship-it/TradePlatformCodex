@@ -24,7 +24,7 @@ export async function evaluateRisk(config: AppConfig, signal: PaperTradeInput): 
   }
 
   const openTrades = await prisma.trade.count({
-    where: { status: "OPEN" }
+    where: { status: { in: ["OPEN", "TP1_HIT"] } }
   });
   if (openTrades >= config.MAX_OPEN_TRADES) {
     reasons.push(`max open trades reached (${config.MAX_OPEN_TRADES})`);
@@ -51,4 +51,3 @@ export async function evaluateRisk(config: AppConfig, signal: PaperTradeInput): 
 
   return { allowed: reasons.length === 0, reasons };
 }
-

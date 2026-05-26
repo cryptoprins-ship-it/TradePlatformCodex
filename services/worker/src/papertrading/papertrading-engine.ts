@@ -57,7 +57,7 @@ export async function openPaperTrade(config: AppConfig, signal: PaperTradeInput)
 }
 
 export async function monitorOpenPaperTrades(currentPrice: number): Promise<void> {
-  const openTrades = await prisma.trade.findMany({ where: { status: "OPEN" } });
+  const openTrades = await prisma.trade.findMany({ where: { status: { in: ["OPEN", "TP1_HIT"] } } });
   for (const trade of openTrades) {
     const entry = Number(trade.entryPrice);
     const stopLoss = Number(trade.stopLoss);
@@ -87,10 +87,17 @@ export async function monitorOpenPaperTrades(currentPrice: number): Promise<void
           }
         }
       });
+      await logBot("info", stopHit ? "Papertrade stop loss hit" : "Papertrade take profit 2 hit", {
+        tradeId: trade.id,
+        symbol: trade.symbol,
+        timeframe: trade.timeframe,
+        direction: trade.direction,
+        pnlPercentage
+      });
       continue;
     }
 
-    if (tp1Hit) {
+    if (tp1Hit && trade.status === "OPEN") {
       await prisma.trade.update({
         where: { id: trade.id },
         data: {
@@ -104,7 +111,12 @@ export async function monitorOpenPaperTrades(currentPrice: number): Promise<void
           }
         }
       });
+      await logBot("info", "Papertrade take profit 1 hit", {
+        tradeId: trade.id,
+        symbol: trade.symbol,
+        timeframe: trade.timeframe,
+        direction: trade.direction
+      });
     }
   }
 }
-
