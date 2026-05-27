@@ -45,6 +45,7 @@ const envSchema = z.object({
   MAX_DAILY_LOSS: numberString(3),
   MAX_OPEN_TRADES: numberString(1),
   MIN_CONFIDENCE_SCORE: numberString(75),
+  MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP: numberString(74),
   MAX_TRADES_PER_DAY: numberString(3),
   WORKER_INTERVAL_SECONDS: numberString(60),
   MARKOV_REGIME_ENABLED: booleanString.default("true"),

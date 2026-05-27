@@ -119,6 +119,7 @@ MAX_RISK_PER_TRADE=1
 MAX_DAILY_LOSS=3
 MAX_OPEN_TRADES=1
 MIN_CONFIDENCE_SCORE=75
+MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP=74
 MAX_TRADES_PER_DAY=3
 KILL_SWITCH=false
 MARKOV_REGIME_ENABLED=true
@@ -129,6 +130,8 @@ MARKOV_REGIME_VOLATILE_PENALTY=35
 If `KILL_SWITCH=true`, new papertrades are blocked and a bot log is created.
 
 The Markov regime filter does not open trades by itself. It classifies recent 1h and 4h returns per symbol as `BULL`, `BEAR`, `SIDEWAYS` or `VOLATILE`, then subtracts score from signals that fight the regime. Volatile regimes receive the larger penalty so noisy market conditions are more likely to be recorded as skipped signals instead of opened papertrades.
+
+`MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP=74` keeps setups without a clean liquidity sweep below the default `MIN_CONFIDENCE_SCORE=75`. For short paper-only experiments, setting `MIN_CONFIDENCE_SCORE=74` allows the strongest capped setups to open papertrades, but this weakens the entry-quality gate and should be reviewed against skipped/winning signal history before leaving it enabled.
 
 ## VPS Notes
 

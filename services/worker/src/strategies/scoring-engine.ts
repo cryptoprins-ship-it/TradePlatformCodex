@@ -92,9 +92,10 @@ function clampScore(score: number): number {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
-function setupQualityGate(hasLiquiditySweep: boolean, rawScore: number): ModuleScore {
+function setupQualityGate(config: AppConfig, hasLiquiditySweep: boolean, rawScore: number): ModuleScore {
   const cappedRawScore = clampScore(rawScore);
-  const maxScoreWithoutSweep = 74;
+  const configuredCap = Number.isFinite(config.MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP) ? config.MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP : 74;
+  const maxScoreWithoutSweep = Math.min(configuredCap, config.MIN_CONFIDENCE_SCORE - 1);
   const penalty = hasLiquiditySweep ? 0 : Math.min(0, maxScoreWithoutSweep - cappedRawScore);
 
   return {
@@ -135,7 +136,7 @@ function buildSignal(
     markovRegime.moduleScore
   ];
   const rawScore = preliminaryScores.reduce((sum, module) => sum + module.score, 0);
-  const moduleScores = [...preliminaryScores, setupQualityGate(wick.score > 0, rawScore)];
+  const moduleScores = [...preliminaryScores, setupQualityGate(config, wick.score > 0, rawScore)];
   const score = clampScore(moduleScores.reduce((sum, module) => sum + module.score, 0));
   const reason = moduleScores.map((module) => module.reason).join("; ");
 
