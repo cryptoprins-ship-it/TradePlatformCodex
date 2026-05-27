@@ -11,6 +11,7 @@ export default async function LogsPage() {
         <h1>Logs</h1>
       </div>
       <section className="panel">
+        <div className="table-wrap">
         <table>
           <thead>
             <tr>
@@ -24,15 +25,16 @@ export default async function LogsPage() {
           <tbody>
             {logs.map((log) => (
               <tr key={log.id}>
-                <td>{log.createdAt.toLocaleString("nl-NL")}</td>
-                <td>{log.run?.name ?? "Legacy"}</td>
-                <td>{log.level}</td>
-                <td>{log.message}</td>
-                <td>{log.context ? JSON.stringify(log.context) : "-"}</td>
+                <td data-label="Created"><span className="cell-label">Created</span>{log.createdAt.toLocaleString("nl-NL")}</td>
+                <td data-label="Run"><span className="cell-label">Run</span>{log.run?.name ?? "Legacy"}</td>
+                <td data-label="Level"><span className="cell-label">Level</span>{log.level}</td>
+                <td data-label="Message"><span className="cell-label">Message</span>{log.message}</td>
+                <td data-label="Context"><span className="cell-label">Context</span>{log.context ? JSON.stringify(log.context) : "-"}</td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </section>
     </>
   );

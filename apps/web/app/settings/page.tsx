@@ -26,6 +26,7 @@ export default function SettingsPage() {
         <StatusPill label="Secrets hidden" tone="good" />
       </div>
       <section className="panel">
+        <div className="table-wrap">
         <table>
           <thead>
             <tr>
@@ -36,12 +37,13 @@ export default function SettingsPage() {
           <tbody>
             {rows.map(([key, value]) => (
               <tr key={key}>
-                <td>{key}</td>
-                <td>{value}</td>
+                <td data-label="Key"><span className="cell-label">Key</span>{key}</td>
+                <td data-label="Value"><span className="cell-label">Value</span>{value}</td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </section>
     </>
   );
