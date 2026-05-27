@@ -6,6 +6,8 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const data = await getDashboardData();
+  const currentRun = data.runs.current;
+  const previousRun = data.runs.previous;
 
   return (
     <>
@@ -18,6 +20,7 @@ export default async function DashboardPage() {
         <Metric label="Active symbols" value={data.symbols.map((symbol) => symbol.symbol).join(", ") || "BTCUSDT"} />
         <Metric label="Trading mode" value={data.config.TRADING_MODE.toUpperCase()} />
         <Metric label="Live trading" value={data.config.ENABLE_LIVE_TRADING ? "Enabled" : "Disabled"} />
+        <Metric label="Active run" value={currentRun ? currentRun.name : "Legacy pooled data"} />
         <Metric label="Open papertrades" value={data.openTrades.length} />
         <Metric label="Closed papertrades" value={data.closedTrades.length} />
         <Metric label="Skipped signals" value={data.skippedSignals} />
@@ -40,11 +43,60 @@ export default async function DashboardPage() {
       </section>
 
       <section className="panel" style={{ marginTop: 18 }}>
+        <h2>Run comparison</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Run</th>
+              <th>Started</th>
+              <th>Symbols</th>
+              <th>Min score</th>
+              <th>No-sweep cap</th>
+              <th>Signals</th>
+              <th>Skipped</th>
+              <th>Winrate</th>
+              <th>P/L</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[currentRun, previousRun].filter(Boolean).map((run) => (
+              <tr key={run!.id}>
+                <td>{run!.name}</td>
+                <td>{run!.startedAt.toLocaleString("nl-NL")}</td>
+                <td>{run!.snapshot.symbols.join(", ") || "BTCUSDT"}</td>
+                <td>{run!.snapshot.minConfidenceScore}</td>
+                <td>{run!.snapshot.maxScoreWithoutLiquiditySweep}</td>
+                <td>{run!.signals}</td>
+                <td>{run!.skippedSignals}</td>
+                <td>{run!.winrate.toFixed(1)}%</td>
+                <td>{run!.pnl.toFixed(2)}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="panel" style={{ marginTop: 18 }}>
+        <h2>Run context</h2>
+        <p className="muted">
+          The dashboard now reads the latest run separately from legacy pooled data. Old signals and trades stay in the database so parameter changes can be compared by run instead of overwritten.
+        </p>
+        {currentRun ? (
+          <p className="muted">
+            Current run {currentRun.name} started {currentRun.startedAt.toLocaleString("nl-NL")} with {currentRun.snapshot.symbols.join(", ") || "BTCUSDT"} and threshold {currentRun.snapshot.minConfidenceScore}.
+          </p>
+        ) : (
+          <p className="muted">No run record exists yet. Start the worker once to create the first run snapshot.</p>
+        )}
+      </section>
+
+      <section className="panel" style={{ marginTop: 18 }}>
         <h2>Latest signals</h2>
         <table>
           <thead>
             <tr>
               <th>Created</th>
+              <th>Run</th>
               <th>Symbol</th>
               <th>TF</th>
               <th>Direction</th>
@@ -56,6 +108,7 @@ export default async function DashboardPage() {
             {data.signals.map((signal) => (
               <tr key={signal.id}>
                 <td>{signal.createdAt.toLocaleString("nl-NL")}</td>
+                <td>{signal.run?.name ?? "Legacy"}</td>
                 <td>{signal.symbol}</td>
                 <td>{signal.timeframe}</td>
                 <td>{signal.direction}</td>

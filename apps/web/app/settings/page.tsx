@@ -14,6 +14,7 @@ export default function SettingsPage() {
     ["MAX_DAILY_LOSS", `${config.MAX_DAILY_LOSS}%`],
     ["MAX_OPEN_TRADES", String(config.MAX_OPEN_TRADES)],
     ["MIN_CONFIDENCE_SCORE", String(config.MIN_CONFIDENCE_SCORE)],
+    ["MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP", String(config.MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP)],
     ["MAX_TRADES_PER_DAY", String(config.MAX_TRADES_PER_DAY)],
     ["KILL_SWITCH", String(config.KILL_SWITCH)]
   ];
@@ -45,4 +46,3 @@ export default function SettingsPage() {
     </>
   );
 }
-

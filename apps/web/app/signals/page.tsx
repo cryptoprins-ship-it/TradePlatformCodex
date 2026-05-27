@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SignalsPage() {
   const signals = await prisma.signal.findMany({
-    include: { strategyScores: true },
+    include: { strategyScores: true, run: { select: { name: true, configHash: true } } },
     orderBy: { createdAt: "desc" },
     take: 50
   });
@@ -19,6 +19,7 @@ export default async function SignalsPage() {
           <thead>
             <tr>
               <th>Created</th>
+              <th>Run</th>
               <th>Symbol</th>
               <th>TF</th>
               <th>Direction</th>
@@ -31,6 +32,7 @@ export default async function SignalsPage() {
             {signals.map((signal) => (
               <tr key={signal.id}>
                 <td>{signal.createdAt.toLocaleString("nl-NL")}</td>
+                <td>{signal.run?.name ?? "Legacy"}</td>
                 <td>{signal.symbol}</td>
                 <td>{signal.timeframe}</td>
                 <td>{signal.direction}</td>

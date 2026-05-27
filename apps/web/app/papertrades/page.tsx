@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PapertradesPage() {
   const trades = await prisma.trade.findMany({
-    include: { events: { orderBy: { createdAt: "desc" }, take: 3 } },
+    include: { events: { orderBy: { createdAt: "desc" }, take: 3 }, run: { select: { name: true, configHash: true } } },
     orderBy: { openedAt: "desc" },
     take: 50
   });
@@ -19,6 +19,7 @@ export default async function PapertradesPage() {
           <thead>
             <tr>
               <th>Opened</th>
+              <th>Run</th>
               <th>Symbol</th>
               <th>TF</th>
               <th>Direction</th>
@@ -34,6 +35,7 @@ export default async function PapertradesPage() {
             {trades.map((trade) => (
               <tr key={trade.id}>
                 <td>{trade.openedAt.toLocaleString("nl-NL")}</td>
+                <td>{trade.run?.name ?? "Legacy"}</td>
                 <td>{trade.symbol}</td>
                 <td>{trade.timeframe}</td>
                 <td>{trade.direction}</td>

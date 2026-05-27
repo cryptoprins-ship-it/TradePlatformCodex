@@ -1,9 +1,11 @@
 import { type AppConfig, type PaperTradeInput, type SupportedSymbol } from "@tradeplatformcodex/shared";
 import { prisma } from "../db";
 import { logBot } from "../logging/bot-log";
+import { getActiveRunId } from "../run-context";
 import { evaluateRisk } from "../risk/risk-manager";
 
 export async function openPaperTrade(config: AppConfig, signal: PaperTradeInput): Promise<string | null> {
+  const runId = getActiveRunId();
   const risk = await evaluateRisk(config, signal);
   if (!risk.allowed) {
     await prisma.signal.update({
@@ -25,6 +27,7 @@ export async function openPaperTrade(config: AppConfig, signal: PaperTradeInput)
 
   const trade = await prisma.trade.create({
     data: {
+      ...(runId ? { runId } : {}),
       signalId: signal.signalId,
       symbol: signal.symbol,
       timeframe: signal.timeframe,
@@ -57,7 +60,14 @@ export async function openPaperTrade(config: AppConfig, signal: PaperTradeInput)
 }
 
 export async function monitorOpenPaperTrades(symbol: SupportedSymbol, currentPrice: number): Promise<void> {
-  const openTrades = await prisma.trade.findMany({ where: { symbol, status: { in: ["OPEN", "TP1_HIT"] } } });
+  const runId = getActiveRunId();
+  const openTrades = await prisma.trade.findMany({
+    where: {
+      ...(runId ? { runId } : {}),
+      symbol,
+      status: { in: ["OPEN", "TP1_HIT"] }
+    }
+  });
   for (const trade of openTrades) {
     const entry = Number(trade.entryPrice);
     const stopLoss = Number(trade.stopLoss);

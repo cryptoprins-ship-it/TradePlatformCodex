@@ -32,6 +32,29 @@ enum TradingMode {
   PAPER
 }
 
+enum BotRunStatus {
+  RUNNING
+  STOPPED
+}
+
+model BotRun {
+  id            String        @id @default(cuid())
+  name          String
+  configHash    String        @unique
+  configSnapshot Json
+  status        BotRunStatus  @default(RUNNING)
+  startedAt     DateTime      @default(now())
+  lastSeenAt    DateTime      @default(now())
+  stoppedAt     DateTime?
+
+  signals        Signal[]
+  trades         Trade[]
+  strategyScores StrategyScore[]
+  botLogs        BotLog[]
+
+  @@map("bot_runs")
+}
+
 model Symbol {
   id         String   @id @default(cuid())
   symbol     String   @unique
@@ -71,6 +94,7 @@ model Candle {
 
 model Signal {
   id        String       @id @default(cuid())
+  runId     String?
   symbol    String
   timeframe String
   direction Direction
@@ -79,16 +103,18 @@ model Signal {
   status    SignalStatus @default(DETECTED)
   createdAt DateTime     @default(now())
 
+  run            BotRun?         @relation(fields: [runId], references: [id])
   symbolRef      Symbol          @relation(fields: [symbol], references: [symbol])
   trade          Trade?
   strategyScores StrategyScore[]
 
-  @@index([symbol, timeframe, createdAt])
+  @@index([runId, symbol, timeframe, createdAt])
   @@map("signals")
 }
 
 model Trade {
   id                  String      @id @default(cuid())
+  runId               String?
   signalId            String?     @unique
   symbol              String
   timeframe           String
@@ -111,11 +137,12 @@ model Trade {
   closedAt            DateTime?
   mode                TradingMode @default(PAPER)
 
+  run       BotRun?      @relation(fields: [runId], references: [id])
   signal    Signal?      @relation(fields: [signalId], references: [id])
   symbolRef Symbol       @relation(fields: [symbol], references: [symbol])
   events    TradeEvent[]
 
-  @@index([symbol, status, openedAt])
+  @@index([runId, symbol, status, openedAt])
   @@map("trades")
 }
 
@@ -135,26 +162,31 @@ model TradeEvent {
 
 model StrategyScore {
   id        String   @id @default(cuid())
+  runId     String?
   signalId  String
   module    String
   score     Int
   reason    String
   createdAt DateTime @default(now())
 
-  signal Signal @relation(fields: [signalId], references: [id])
+  run    BotRun? @relation(fields: [runId], references: [id])
+  signal Signal  @relation(fields: [signalId], references: [id])
 
-  @@index([signalId])
+  @@index([runId, signalId])
   @@map("strategy_scores")
 }
 
 model BotLog {
   id        String   @id @default(cuid())
+  runId     String?
   level     String
   message   String
   context   Json?
   createdAt DateTime @default(now())
 
-  @@index([level, createdAt])
+  run BotRun? @relation(fields: [runId], references: [id])
+
+  @@index([runId, level, createdAt])
   @@map("bot_logs")
 }
 

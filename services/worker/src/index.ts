@@ -5,6 +5,7 @@ import { MEXCMarketDataClient } from "./market-data/mexc-client";
 import { openPaperTrade, monitorOpenPaperTrades } from "./papertrading/papertrading-engine";
 import { prisma } from "./db";
 import { logBot } from "./logging/bot-log";
+import { ensureActiveRun, getActiveRunId, touchActiveRun } from "./run-context";
 import { generateSignals } from "./strategies/scoring-engine";
 
 const config = loadConfig();
@@ -12,8 +13,10 @@ const client = new MEXCMarketDataClient();
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function persistSignal(signal: TradingSignal): Promise<string> {
+  const runId = getActiveRunId();
   const created = await prisma.signal.create({
     data: {
+      ...(runId ? { runId } : {}),
       symbol: signal.symbol,
       timeframe: signal.timeframe,
       direction: signal.direction,
@@ -21,6 +24,7 @@ async function persistSignal(signal: TradingSignal): Promise<string> {
       reason: signal.reason,
       strategyScores: {
         create: signal.moduleScores.map((module) => ({
+          ...(runId ? { runId } : {}),
           module: module.module,
           score: module.score,
           reason: module.reason
@@ -32,6 +36,7 @@ async function persistSignal(signal: TradingSignal): Promise<string> {
 }
 
 export async function runWorkerCycle(): Promise<void> {
+  await touchActiveRun();
   const symbols = config.SYMBOLS as SupportedSymbol[];
   await ensureSymbols(symbols);
   if (config.KILL_SWITCH) {
@@ -77,7 +82,9 @@ export async function runWorkerCycle(): Promise<void> {
 }
 
 async function runWorkerLoop(): Promise<void> {
+  await ensureActiveRun(config);
   await logBot("info", "Worker loop started", {
+    runId: getActiveRunId(),
     symbols: config.SYMBOLS,
     intervalSeconds: config.WORKER_INTERVAL_SECONDS
   });

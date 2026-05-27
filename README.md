@@ -133,6 +133,8 @@ The Markov regime filter does not open trades by itself. It classifies recent 1h
 
 `MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP=74` keeps setups without a clean liquidity sweep below the default `MIN_CONFIDENCE_SCORE=75`. For short paper-only experiments, setting `MIN_CONFIDENCE_SCORE=74` allows the strongest capped setups to open papertrades, but this weakens the entry-quality gate and should be reviewed against skipped/winning signal history before leaving it enabled.
 
+When the VPS `.env` changes and the worker restarts, the bot now stores a new run snapshot instead of overwriting old results. The dashboard shows the current run alongside the previous run so score changes can be compared without deleting historical signals or trades.
+
 ## VPS Notes
 
 Recommended first deployment:

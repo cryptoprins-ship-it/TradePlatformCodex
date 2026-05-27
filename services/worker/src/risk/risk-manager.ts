@@ -1,11 +1,14 @@
 import { type AppConfig, type PaperTradeInput, type RiskSnapshot } from "@tradeplatformcodex/shared";
 import { prisma } from "../db";
+import { getActiveRunId } from "../run-context";
 
 export async function evaluateRisk(config: AppConfig, signal: PaperTradeInput): Promise<RiskSnapshot> {
   const reasons: string[] = [];
   const now = new Date();
   const startOfDay = new Date(now);
   startOfDay.setHours(0, 0, 0, 0);
+  const runId = getActiveRunId();
+  const runFilter = runId ? { runId } : {};
 
   if (config.KILL_SWITCH) {
     reasons.push("KILL_SWITCH active: new trades blocked");
@@ -24,14 +27,14 @@ export async function evaluateRisk(config: AppConfig, signal: PaperTradeInput): 
   }
 
   const openTrades = await prisma.trade.count({
-    where: { status: { in: ["OPEN", "TP1_HIT"] } }
+    where: { ...runFilter, status: { in: ["OPEN", "TP1_HIT"] } }
   });
   if (openTrades >= config.MAX_OPEN_TRADES) {
     reasons.push(`max open trades reached (${config.MAX_OPEN_TRADES})`);
   }
 
   const todaysTrades = await prisma.trade.count({
-    where: { openedAt: { gte: startOfDay } }
+    where: { ...runFilter, openedAt: { gte: startOfDay } }
   });
   if (todaysTrades >= config.MAX_TRADES_PER_DAY) {
     reasons.push(`max trades per day reached (${config.MAX_TRADES_PER_DAY})`);
@@ -39,6 +42,7 @@ export async function evaluateRisk(config: AppConfig, signal: PaperTradeInput): 
 
   const closedToday = await prisma.trade.findMany({
     where: {
+      ...runFilter,
       closedAt: { gte: startOfDay },
       pnlPercentage: { not: null }
     },

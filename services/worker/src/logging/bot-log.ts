@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
+import { getActiveRunId } from "../run-context";
 
 type LogLevel = "info" | "warn" | "error";
 
@@ -20,8 +21,10 @@ function sanitizeContext(context?: Record<string, unknown>): Record<string, unkn
 }
 
 export async function logBot(level: LogLevel, message: string, context?: Record<string, unknown>): Promise<void> {
+  const runId = getActiveRunId();
   await prisma.botLog.create({
     data: {
+      ...(runId ? { runId } : {}),
       level,
       message,
       context: sanitizeContext(context) as Prisma.InputJsonValue | undefined
