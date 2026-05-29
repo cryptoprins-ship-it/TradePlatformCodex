@@ -4,10 +4,19 @@ import { getDashboardData } from "../../lib/dashboard";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
-  const data = await getDashboardData();
+function parseFrom(value: string | string[] | undefined): Date | undefined {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return undefined;
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+export default async function DashboardPage({ searchParams }: { searchParams?: { from?: string | string[] } }) {
+  const from = parseFrom(searchParams?.from);
+  const data = await getDashboardData({ from });
   const currentRun = data.runs.current;
   const previousRun = data.runs.previous;
+  const fromValue = data.from ? data.from.toISOString().slice(0, 10) : "";
 
   return (
     <>
@@ -16,11 +25,26 @@ export default async function DashboardPage() {
         <StatusPill label={data.config.KILL_SWITCH ? "Trading paused" : "Paper trading active"} tone={data.config.KILL_SWITCH ? "bad" : "good"} />
       </div>
 
+      <form className="panel" method="get" style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span className="cell-label">Show data from</span>
+          <input type="date" name="from" defaultValue={fromValue} style={{ padding: "6px 8px" }} />
+        </label>
+        <button type="submit" style={{ padding: "7px 14px", borderRadius: 6, border: "1px solid var(--line)", background: "var(--shell)", color: "#ffffff", cursor: "pointer" }}>Apply</button>
+        {fromValue ? (
+          <a href="/dashboard" className="muted" style={{ alignSelf: "center" }}>Reset</a>
+        ) : null}
+        <span className="muted" style={{ alignSelf: "center" }}>
+          {fromValue ? `Filtering trades & signals from ${data.from!.toLocaleDateString("nl-NL")}` : "Showing all results for the active run"}
+        </span>
+      </form>
+      {!currentRun ? <p className="muted">No active run is loaded yet. Start the worker after the new `.env` values are in place.</p> : null}
+
       <div className="grid">
         <Metric label="Active symbols" value={data.symbols.map((symbol) => symbol.symbol).join(", ") || "BTCUSDT"} />
         <Metric label="Trading mode" value={data.config.TRADING_MODE.toUpperCase()} />
         <Metric label="Live trading" value={data.config.ENABLE_LIVE_TRADING ? "Enabled" : "Disabled"} />
-        <Metric label="Active run" value={currentRun ? currentRun.name : "Legacy pooled data"} />
+        <Metric label="Active run" value={currentRun ? currentRun.name : "No active run"} />
         <Metric label="Open papertrades" value={data.openTrades.length} />
         <Metric label="Closed papertrades" value={data.closedTrades.length} />
         <Metric label="Skipped signals" value={data.skippedSignals} />
