@@ -35,7 +35,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
           <a href="/dashboard" className="muted" style={{ alignSelf: "center" }}>Reset</a>
         ) : null}
         <span className="muted" style={{ alignSelf: "center" }}>
-          {fromValue ? `Filtering trades & signals from ${data.from!.toLocaleDateString("nl-NL")}` : "Showing all results for the active run"}
+          {fromValue ? `Filtering trades & signals from ${data.from!.toLocaleDateString("nl-NL")} (all runs)` : "Showing all results across all runs"}
         </span>
       </form>
       {!currentRun ? <p className="muted">No active run is loaded yet. Start the worker after the new `.env` values are in place.</p> : null}

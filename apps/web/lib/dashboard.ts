@@ -129,43 +129,35 @@ export async function getDashboardData(options: { from?: Date } = {}) {
   });
   const currentRun = runs[0] ? await summarizeRun(runs[0], from) : null;
   const previousRun = runs[1] ? await summarizeRun(runs[1], from) : null;
-  const currentRunId = currentRun?.id ?? null;
-  const [symbols, signals, openTrades, closedTrades, skippedSignals, logs] = currentRunId
-    ? await Promise.all([
-        prisma.symbol.findMany({ where: { isActive: true } }),
-        prisma.signal.findMany({
-          where: { runId: currentRunId, ...createdFilter },
-          include: { run: { select: { name: true, configHash: true } } },
-          orderBy: { createdAt: "desc" },
-          take: 8
-        }),
-        prisma.trade.findMany({
-          where: { runId: currentRunId, status: { in: ["OPEN", "TP1_HIT"] }, ...openedFilter },
-          include: { run: { select: { name: true, configHash: true } } },
-          orderBy: { openedAt: "desc" }
-        }),
-        prisma.trade.findMany({
-          where: { runId: currentRunId, ...closedFilter },
-          include: { run: { select: { name: true, configHash: true } } },
-          orderBy: { closedAt: "desc" },
-          take: 50
-        }),
-        prisma.signal.count({ where: { runId: currentRunId, status: "SKIPPED", ...createdFilter } }),
-        prisma.botLog.findMany({
-          where: { runId: currentRunId, ...createdFilter },
-          include: { run: { select: { name: true, configHash: true } } },
-          orderBy: { createdAt: "desc" },
-          take: 5
-        })
-      ])
-    : await Promise.all([
-        prisma.symbol.findMany({ where: { isActive: true } }),
-        Promise.resolve([]),
-        Promise.resolve([]),
-        Promise.resolve([]),
-        Promise.resolve(0),
-        Promise.resolve([])
-      ]);
+  // Main metrics span every run (including legacy null-runId rows); the date
+  // filter is the only scope. Run comparison above stays per-run.
+  const [symbols, signals, openTrades, closedTrades, skippedSignals, logs] = await Promise.all([
+    prisma.symbol.findMany({ where: { isActive: true } }),
+    prisma.signal.findMany({
+      where: { ...createdFilter },
+      include: { run: { select: { name: true, configHash: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 8
+    }),
+    prisma.trade.findMany({
+      where: { status: { in: ["OPEN", "TP1_HIT"] }, ...openedFilter },
+      include: { run: { select: { name: true, configHash: true } } },
+      orderBy: { openedAt: "desc" }
+    }),
+    prisma.trade.findMany({
+      where: { ...closedFilter },
+      include: { run: { select: { name: true, configHash: true } } },
+      orderBy: { closedAt: "desc" },
+      take: 50
+    }),
+    prisma.signal.count({ where: { status: "SKIPPED", ...createdFilter } }),
+    prisma.botLog.findMany({
+      where: { ...createdFilter },
+      include: { run: { select: { name: true, configHash: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 5
+    })
+  ]);
 
   const wins = closedTrades.filter((trade) => trade.result === "WIN").length;
   const losses = closedTrades.filter((trade) => trade.result === "LOSS").length;
