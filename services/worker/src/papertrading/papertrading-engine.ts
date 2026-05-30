@@ -59,7 +59,7 @@ export async function openPaperTrade(config: AppConfig, signal: PaperTradeInput)
   return trade.id;
 }
 
-export async function monitorOpenPaperTrades(symbol: SupportedSymbol, currentPrice: number): Promise<void> {
+export async function monitorOpenPaperTrades(config: AppConfig, symbol: SupportedSymbol, currentPrice: number): Promise<void> {
   const runId = getActiveRunId();
   const openTrades = await prisma.trade.findMany({
     where: {
@@ -79,12 +79,24 @@ export async function monitorOpenPaperTrades(symbol: SupportedSymbol, currentPri
     const tp1Hit = isLong ? currentPrice >= tp1 : currentPrice <= tp1;
 
     if (stopHit || tp2Hit) {
-      const pnlPercentage = ((currentPrice - entry) / entry) * 100 * (isLong ? 1 : -1);
+      const slippageBps = config.SLIPPAGE_BPS;
+      // Stop = market order: fill at the stop level plus adverse slippage.
+      // TP2 = limit order: fills at the level. This bounds the recorded loss to
+      // the stop distance + slippage instead of the coarsely polled overshoot
+      // (the monitor only sees one ticker price per WORKER_INTERVAL_SECONDS).
+      const exitPrice = stopHit
+        ? isLong
+          ? stopLoss * (1 - slippageBps / 10000)
+          : stopLoss * (1 + slippageBps / 10000)
+        : tp2;
+      const pnlPercentage = ((exitPrice - entry) / entry) * 100 * (isLong ? 1 : -1);
+      const triggerLevel = stopHit ? stopLoss : tp2;
+      const deviationBps = triggerLevel === 0 ? 0 : Math.abs((currentPrice - triggerLevel) / triggerLevel) * 10000;
       await prisma.trade.update({
         where: { id: trade.id },
         data: {
           status: stopHit ? "STOP_LOSS_HIT" : "TP2_HIT",
-          exitPrice: currentPrice,
+          exitPrice,
           pnlPercentage,
           // Use realized pnl sign: a stop moved to breakeven after TP1 scratches
           // at ~0% and must not be miscounted as a loss.
@@ -93,8 +105,10 @@ export async function monitorOpenPaperTrades(symbol: SupportedSymbol, currentPri
           events: {
             create: {
               eventType: stopHit ? "STOP_LOSS_HIT" : "TP2_HIT",
-              message: stopHit ? "Stop loss hit" : "Take profit 2 hit",
-              price: currentPrice
+              message: stopHit
+                ? `Stop loss hit; filled ${exitPrice.toFixed(8)} (level ${stopLoss}, observed ${currentPrice}, slip ${slippageBps}bps)`
+                : `Take profit 2 hit; filled ${exitPrice.toFixed(8)}`,
+              price: exitPrice
             }
           }
         }
@@ -104,8 +118,22 @@ export async function monitorOpenPaperTrades(symbol: SupportedSymbol, currentPri
         symbol: trade.symbol,
         timeframe: trade.timeframe,
         direction: trade.direction,
-        pnlPercentage
+        pnlPercentage,
+        exitPrice,
+        deviationBps
       });
+      // Large gap between trigger level and observed price = a coarse poll caught
+      // price well past the level, or the live market gapped. Surface it instead
+      // of silently absorbing it into pnl.
+      if (deviationBps > slippageBps * 5) {
+        await logBot("warn", "Fill deviation high: price was well past trigger when observed", {
+          tradeId: trade.id,
+          symbol: trade.symbol,
+          triggerLevel,
+          observedPrice: currentPrice,
+          deviationBps
+        });
+      }
       continue;
     }
 

@@ -58,7 +58,7 @@ export async function runWorkerCycle(): Promise<void> {
       ) as Record<Timeframe, Awaited<ReturnType<MEXCMarketDataClient["getCandles"]>>>;
 
       const currentPrice = await client.getTickerPrice(symbol);
-      await monitorOpenPaperTrades(symbol, currentPrice);
+      await monitorOpenPaperTrades(config, symbol, currentPrice);
 
       const signals = generateSignals(config, symbol, candlesByTimeframe);
       signalCount += signals.length;

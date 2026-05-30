@@ -48,6 +48,10 @@ const envSchema = z.object({
   MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP: numberString(74),
   MAX_TRADES_PER_DAY: numberString(3),
   WORKER_INTERVAL_SECONDS: numberString(60),
+  // Modeled adverse slippage (basis points) applied to stop-loss fills, which
+  // behave like market orders. Bounds the recorded loss to the stop level plus
+  // this buffer instead of wherever the coarse poll happens to catch price.
+  SLIPPAGE_BPS: numberString(5),
   MARKOV_REGIME_ENABLED: booleanString.default("true"),
   MARKOV_REGIME_PENALTY: numberString(25),
   MARKOV_REGIME_VOLATILE_PENALTY: numberString(35),
