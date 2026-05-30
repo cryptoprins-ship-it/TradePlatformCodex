@@ -42,6 +42,8 @@ describe("generateSignals", () => {
     // "liquidity sweep required" penalty no longer appears.
     expect(signals.every((signal) => signal.moduleScores.every((module) => module.module !== "Setup quality gate"))).toBe(true);
     expect(signals.every((signal) => !signal.reason.includes("liquidity sweep required"))).toBe(true);
+    // RSI was removed as a redundant momentum module; MACD now carries momentum.
+    expect(signals.every((signal) => signal.moduleScores.every((module) => module.module !== "RSI filter"))).toBe(true);
     // Score is the honest clamped sum of the remaining modules, not MIN - 1.
     for (const signal of signalsWithoutSweep) {
       const expected = Math.max(0, Math.min(100, Math.round(signal.moduleScores.reduce((sum, module) => sum + module.score, 0))));

@@ -8,7 +8,7 @@ import {
   type Timeframe,
   type TradingSignal
 } from "@tradeplatformcodex/shared";
-import { adx, ema, hasBearishShakeout, hasBullishShakeout, macd, obv, rsi } from "./indicators";
+import { adx, ema, hasBearishShakeout, hasBullishShakeout, macd, obv } from "./indicators";
 import { assessMarkovRegime, type MarketRegime } from "./markov-regime";
 
 type CandleMap = Record<Timeframe, Candle[]>;
@@ -29,24 +29,12 @@ function trendScore(candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore
   };
 }
 
-function rsiScore(candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore {
-  const values = rsi(candles.map((candle) => candle.close));
-  const current = values.at(-1) ?? 50;
-  const previous = values.at(-2) ?? current;
-  const aligned = direction === "LONG" ? current > previous && current < 70 : current < previous && current > 30;
-  return {
-    module: "RSI filter",
-    score: aligned ? 15 : 4,
-    reason: aligned ? `RSI momentum supports ${direction}` : `RSI at ${round(current, 2)} lacks confirmation`
-  };
-}
-
 function macdScore(candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore {
   const result = macd(candles.map((candle) => candle.close));
   const aligned = direction === "LONG" ? result.histogram > 0 : result.histogram < 0;
   return {
     module: "MACD momentum",
-    score: aligned ? 15 : 4,
+    score: aligned ? 20 : 5,
     reason: aligned ? "MACD histogram confirms momentum" : "MACD momentum missing"
   };
 }
@@ -63,7 +51,7 @@ function volumeScore(config: AppConfig, candles: Candle[], direction: "LONG" | "
   const falling = latest < prior;
   const aligned = direction === "LONG" ? latest > baseline && rising : latest < baseline && falling;
   const opposes = direction === "LONG" ? latest < baseline && falling : latest > baseline && rising;
-  const score = aligned ? 15 : opposes ? 3 : 8;
+  const score = aligned ? 20 : opposes ? 4 : 11;
   return {
     module: "Volume confirmation (OBV)",
     score,
@@ -124,7 +112,7 @@ function timeframeScore(candlesByTimeframe: CandleMap, direction: "LONG" | "SHOR
   }).length;
   return {
     module: "Multi-timeframe context",
-    score: alignedCount === 2 ? 15 : alignedCount === 1 ? 8 : 2,
+    score: alignedCount === 2 ? 20 : alignedCount === 1 ? 11 : 3,
     reason: `${alignedCount}/2 context timeframes aligned`
   };
 }
@@ -165,7 +153,6 @@ function buildSignal(
   const preliminaryScores = [
     trendScore(candles, direction),
     adxScore(config, candles, direction),
-    rsiScore(candles, direction),
     macdScore(candles, direction),
     volumeScore(config, candles, direction),
     wick,
