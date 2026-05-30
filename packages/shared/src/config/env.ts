@@ -52,6 +52,12 @@ const envSchema = z.object({
   // behave like market orders. Bounds the recorded loss to the stop level plus
   // this buffer instead of wherever the coarse poll happens to catch price.
   SLIPPAGE_BPS: numberString(5),
+  // Regime-adaptive trailing stop after TP1: ATR multiples picked at entry from
+  // the Markov regime. Strong aligned trend rides wide; chop/volatile locks tight.
+  TRAIL_STRONG_ATR_MULT: numberString(2.5),
+  TRAIL_WEAK_ATR_MULT: numberString(1.8),
+  TRAIL_CHOP_ATR_MULT: numberString(1),
+  TRAIL_STRONG_CONFIDENCE: numberString(0.6),
   MARKOV_REGIME_ENABLED: booleanString.default("true"),
   MARKOV_REGIME_PENALTY: numberString(25),
   MARKOV_REGIME_VOLATILE_PENALTY: numberString(35),

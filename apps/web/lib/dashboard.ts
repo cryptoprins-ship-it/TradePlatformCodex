@@ -70,6 +70,22 @@ function summarizeClosedTrades(closedTrades: TradeRow[]): { winrate: number; pnl
   };
 }
 
+function summarizeByRegime(closedTrades: TradeRow[]) {
+  const groups = new Map<string, TradeRow[]>();
+  for (const trade of closedTrades) {
+    const regime = (trade as { entryRegime?: string | null }).entryRegime ?? "UNKNOWN";
+    const list = groups.get(regime) ?? [];
+    list.push(trade);
+    groups.set(regime, list);
+  }
+  return Array.from(groups.entries())
+    .map(([regime, trades]) => {
+      const perf = summarizeClosedTrades(trades);
+      return { regime, trades: trades.length, winrate: perf.winrate, pnl: perf.pnl, profitFactor: perf.profitFactor };
+    })
+    .sort((a, b) => b.pnl - a.pnl);
+}
+
 async function summarizeRun(
   run: { id: string; name: string; configHash: string; status: string; startedAt: Date; lastSeenAt: Date; stoppedAt: Date | null; configSnapshot: unknown },
   from?: Date
@@ -184,6 +200,9 @@ export async function getDashboardData(options: { from?: Date } = {}) {
     closedTrades,
     skippedSignals,
     logs,
+    regimeBreakdown: summarizeByRegime(closedTrades),
+    currentRegime:
+      ((openTrades[0] ?? closedTrades[0]) as { entryRegime?: string | null } | undefined)?.entryRegime ?? null,
     winrate: wins + losses === 0 ? 0 : (wins / (wins + losses)) * 100,
     pnl: closedTrades.reduce((sum, trade) => sum + Number(trade.pnlPercentage ?? 0), 0),
     profitFactor: grossLoss === 0 ? grossProfit : grossProfit / grossLoss,

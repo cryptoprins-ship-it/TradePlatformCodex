@@ -45,6 +45,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
         <Metric label="Trading mode" value={data.config.TRADING_MODE.toUpperCase()} />
         <Metric label="Live trading" value={data.config.ENABLE_LIVE_TRADING ? "Enabled" : "Disabled"} />
         <Metric label="Active run" value={currentRun ? currentRun.name : "No active run"} />
+        <Metric label="Current trend" value={data.currentRegime ?? "Unknown"} />
         <Metric label="Open papertrades" value={data.openTrades.length} />
         <Metric label="Closed papertrades" value={data.closedTrades.length} />
         <Metric label="Skipped signals" value={data.skippedSignals} />
@@ -64,6 +65,39 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
           <StatusPill label="MEXC read-only data" tone="good" />{" "}
           <StatusPill label={data.config.TELEGRAM_BOT_TOKEN ? "Telegram configured" : "Telegram not configured"} tone={data.config.TELEGRAM_BOT_TOKEN ? "good" : "warn"} />
         </p>
+      </section>
+
+      <section className="panel" style={{ marginTop: 18 }}>
+        <h2>Performance by trend</h2>
+        <p className="muted">Which market regime (at entry) the bot trades best in. Sorted by P/L.</p>
+        <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Trend</th>
+              <th>Closed trades</th>
+              <th>Winrate</th>
+              <th>P/L</th>
+              <th>Profit factor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.regimeBreakdown.length === 0 ? (
+              <tr><td colSpan={5} className="muted">No closed trades yet.</td></tr>
+            ) : (
+              data.regimeBreakdown.map((row) => (
+                <tr key={row.regime}>
+                  <td data-label="Trend"><span className="cell-label">Trend</span>{row.regime}</td>
+                  <td data-label="Closed trades"><span className="cell-label">Closed trades</span>{row.trades}</td>
+                  <td data-label="Winrate"><span className="cell-label">Winrate</span>{row.winrate.toFixed(1)}%</td>
+                  <td data-label="P/L"><span className="cell-label">P/L</span>{row.pnl.toFixed(2)}%</td>
+                  <td data-label="Profit factor"><span className="cell-label">Profit factor</span>{row.profitFactor.toFixed(2)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+        </div>
       </section>
 
       <section className="panel" style={{ marginTop: 18 }}>

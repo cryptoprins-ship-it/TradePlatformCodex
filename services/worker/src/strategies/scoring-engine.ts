@@ -9,7 +9,7 @@ import {
   type TradingSignal
 } from "@tradeplatformcodex/shared";
 import { ema, hasBearishShakeout, hasBullishShakeout, macd, rsi } from "./indicators";
-import { assessMarkovRegime } from "./markov-regime";
+import { assessMarkovRegime, type MarketRegime } from "./markov-regime";
 
 type CandleMap = Record<Timeframe, Candle[]>;
 
@@ -92,6 +92,16 @@ function clampScore(score: number): number {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
+// Trail width (ATR multiples) chosen at entry from the regime: a strong aligned
+// trend rides wide so winners run; chop, volatility, or a regime that fights the
+// trade direction locks tight to protect gains.
+function chooseTrailMultiple(config: AppConfig, regime: MarketRegime, confidence: number, aligned: boolean): number {
+  if (regime === "VOLATILE" || regime === "SIDEWAYS" || !aligned) {
+    return config.TRAIL_CHOP_ATR_MULT;
+  }
+  return confidence >= config.TRAIL_STRONG_CONFIDENCE ? config.TRAIL_STRONG_ATR_MULT : config.TRAIL_WEAK_ATR_MULT;
+}
+
 function setupQualityGate(config: AppConfig, hasLiquiditySweep: boolean, rawScore: number): ModuleScore {
   const cappedRawScore = clampScore(rawScore);
   const configuredCap = Number.isFinite(config.MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP) ? config.MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP : 74;
@@ -150,7 +160,9 @@ function buildSignal(
     entryPrice: round(entryPrice),
     stopLoss: round(stopLoss),
     takeProfit1: round(takeProfit1),
-    takeProfit2: round(takeProfit2)
+    takeProfit2: round(takeProfit2),
+    trailAtrMultiple: round(chooseTrailMultiple(config, markovRegime.regime, markovRegime.confidence, markovRegime.aligned), 3),
+    entryRegime: markovRegime.regime
   };
 }
 

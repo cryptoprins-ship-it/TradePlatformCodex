@@ -127,6 +127,8 @@ model Trade {
   status              TradeStatus @default(OPEN)
   pnlPercentage       Decimal?    @db.Decimal(12, 4)
   riskReward          Decimal     @db.Decimal(12, 4)
+  trailAtrMultiple    Decimal?    @db.Decimal(6, 3)
+  entryRegime         String?
   confidenceScore     Int
   technicalReason     String
   strategyModulesUsed Json

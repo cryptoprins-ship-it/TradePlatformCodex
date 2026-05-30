@@ -33,6 +33,8 @@ export interface TradingSignal {
   stopLoss: number;
   takeProfit1: number;
   takeProfit2: number;
+  trailAtrMultiple: number;
+  entryRegime: string;
 }
 
 export interface PaperTradeInput extends TradingSignal {

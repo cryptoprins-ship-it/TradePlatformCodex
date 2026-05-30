@@ -38,6 +38,8 @@ export async function openPaperTrade(config: AppConfig, signal: PaperTradeInput)
       takeProfit2: signal.takeProfit2,
       confidenceScore: signal.score,
       riskReward,
+      trailAtrMultiple: signal.trailAtrMultiple,
+      entryRegime: signal.entryRegime,
       technicalReason: signal.reason,
       strategyModulesUsed: signal.moduleScores.map((module) => module.module),
       mode: "PAPER",
@@ -70,12 +72,30 @@ export async function monitorOpenPaperTrades(config: AppConfig, symbol: Supporte
   });
   for (const trade of openTrades) {
     const entry = Number(trade.entryPrice);
-    const stopLoss = Number(trade.stopLoss);
+    let stopLoss = Number(trade.stopLoss);
     const tp1 = Number(trade.takeProfit1);
     const tp2 = Number(trade.takeProfit2);
     const isLong = trade.direction === "LONG";
+    const trailing = trade.status === "TP1_HIT";
+
+    // Once TP1 is hit, trailing is armed: ratchet the stop toward profit by the
+    // entry-chosen ATR multiple before evaluating exits. ATR is recovered from
+    // the stored TP1 (TP1 = entry +/- 1.5*ATR). The stop never loosens.
+    if (trailing) {
+      const atr = Math.abs(tp1 - entry) / 1.5;
+      const trailMult = Number(trade.trailAtrMultiple ?? config.TRAIL_CHOP_ATR_MULT);
+      const trailStop = isLong ? currentPrice - atr * trailMult : currentPrice + atr * trailMult;
+      const ratcheted = isLong ? Math.max(stopLoss, trailStop) : Math.min(stopLoss, trailStop);
+      if (ratcheted !== stopLoss) {
+        stopLoss = ratcheted;
+        await prisma.trade.update({ where: { id: trade.id }, data: { stopLoss } });
+      }
+    }
+
     const stopHit = isLong ? currentPrice <= stopLoss : currentPrice >= stopLoss;
-    const tp2Hit = isLong ? currentPrice >= tp2 : currentPrice <= tp2;
+    // TP2 is only a hard cap before trailing arms; once trailing, the ratcheting
+    // stop governs the exit so strong trends can run past TP2.
+    const tp2Hit = !trailing && (isLong ? currentPrice >= tp2 : currentPrice <= tp2);
     const tp1Hit = isLong ? currentPrice >= tp1 : currentPrice <= tp1;
 
     if (stopHit || tp2Hit) {
@@ -106,14 +126,14 @@ export async function monitorOpenPaperTrades(config: AppConfig, symbol: Supporte
             create: {
               eventType: stopHit ? "STOP_LOSS_HIT" : "TP2_HIT",
               message: stopHit
-                ? `Stop loss hit; filled ${exitPrice.toFixed(8)} (level ${stopLoss}, observed ${currentPrice}, slip ${slippageBps}bps)`
+                ? `${trailing ? "Trailing stop" : "Stop loss"} hit; filled ${exitPrice.toFixed(8)} (level ${stopLoss}, observed ${currentPrice}, slip ${slippageBps}bps)`
                 : `Take profit 2 hit; filled ${exitPrice.toFixed(8)}`,
               price: exitPrice
             }
           }
         }
       });
-      await logBot("info", stopHit ? "Papertrade stop loss hit" : "Papertrade take profit 2 hit", {
+      await logBot("info", stopHit ? (trailing ? "Papertrade trailing stop hit" : "Papertrade stop loss hit") : "Papertrade take profit 2 hit", {
         tradeId: trade.id,
         symbol: trade.symbol,
         timeframe: trade.timeframe,
@@ -142,13 +162,13 @@ export async function monitorOpenPaperTrades(config: AppConfig, symbol: Supporte
         where: { id: trade.id },
         data: {
           status: "TP1_HIT",
-          // Move stop to breakeven once TP1 is reached so a reversal scratches
-          // the trade instead of giving back the move to the original stop.
+          // Move stop to breakeven once TP1 is reached, then trailing arms on the
+          // next cycles (see top of loop) at the entry-chosen ATR multiple.
           stopLoss: entry,
           events: {
             create: {
               eventType: "TP1_HIT",
-              message: `Take profit 1 hit; stop moved to breakeven (${stopLoss} -> ${entry})`,
+              message: `Take profit 1 hit; stop to breakeven, trailing armed at ${Number(trade.trailAtrMultiple ?? config.TRAIL_CHOP_ATR_MULT)}x ATR`,
               price: currentPrice
             }
           }
