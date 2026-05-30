@@ -86,7 +86,9 @@ export async function monitorOpenPaperTrades(symbol: SupportedSymbol, currentPri
           status: stopHit ? "STOP_LOSS_HIT" : "TP2_HIT",
           exitPrice: currentPrice,
           pnlPercentage,
-          result: stopHit ? "LOSS" : "WIN",
+          // Use realized pnl sign: a stop moved to breakeven after TP1 scratches
+          // at ~0% and must not be miscounted as a loss.
+          result: pnlPercentage >= 0 ? "WIN" : "LOSS",
           closedAt: new Date(),
           events: {
             create: {
@@ -112,10 +114,13 @@ export async function monitorOpenPaperTrades(symbol: SupportedSymbol, currentPri
         where: { id: trade.id },
         data: {
           status: "TP1_HIT",
+          // Move stop to breakeven once TP1 is reached so a reversal scratches
+          // the trade instead of giving back the move to the original stop.
+          stopLoss: entry,
           events: {
             create: {
               eventType: "TP1_HIT",
-              message: "Take profit 1 hit; trade remains monitored",
+              message: `Take profit 1 hit; stop moved to breakeven (${stopLoss} -> ${entry})`,
               price: currentPrice
             }
           }
