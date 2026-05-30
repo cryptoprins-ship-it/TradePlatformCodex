@@ -8,7 +8,7 @@ import {
   type Timeframe,
   type TradingSignal
 } from "@tradeplatformcodex/shared";
-import { ema, hasBearishShakeout, hasBullishShakeout, macd, rsi } from "./indicators";
+import { adx, ema, hasBearishShakeout, hasBullishShakeout, macd, obv, rsi } from "./indicators";
 import { assessMarkovRegime, type MarketRegime } from "./markov-regime";
 
 type CandleMap = Record<Timeframe, Candle[]>;
@@ -51,15 +51,56 @@ function macdScore(candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore 
   };
 }
 
-function volumeScore(candles: Candle[]): ModuleScore {
-  const recent = candles.slice(-21, -1);
-  const latest = candles.at(-1);
-  const avgVolume = average(recent.map((candle) => candle.volume));
-  const aligned = latest ? latest.volume > avgVolume * 1.1 : false;
+// Volume confirmation via OBV: rather than only checking that volume was large,
+// check that cumulative volume pressure is flowing WITH the trade direction
+// (above its baseline and still building). Direction-aware beats magnitude-only.
+function volumeScore(config: AppConfig, candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore {
+  const series = obv(candles);
+  const latest = series.at(-1) ?? 0;
+  const baseline = average(series.slice(-config.OBV_SMA_LENGTH));
+  const prior = series.at(-1 - config.OBV_MOMENTUM_LENGTH) ?? latest;
+  const rising = latest > prior;
+  const falling = latest < prior;
+  const aligned = direction === "LONG" ? latest > baseline && rising : latest < baseline && falling;
+  const opposes = direction === "LONG" ? latest < baseline && falling : latest > baseline && rising;
+  const score = aligned ? 15 : opposes ? 3 : 8;
   return {
-    module: "Volume confirmation",
-    score: aligned ? 15 : 3,
-    reason: aligned ? "volume above recent average" : "volume confirmation missing"
+    module: "Volume confirmation (OBV)",
+    score,
+    reason: aligned
+      ? `OBV pressure flows with ${direction}`
+      : opposes
+        ? "OBV pressure opposes the trade"
+        : "OBV pressure neutral"
+  };
+}
+
+// ADX trend-strength gate. EMA200 says which way; this says whether the trend is
+// strong enough to ride. Below threshold = chop (penalised). Strong but with the
+// directional indicators fighting the trade is also penalised; strong and
+// aligned passes clean (neutral, the other modules carry the score).
+function adxScore(config: AppConfig, candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore {
+  const { adx: adxValue, plusDI, minusDI } = adx(candles);
+  const strong = adxValue >= config.ADX_TREND_THRESHOLD;
+  const diAligned = direction === "LONG" ? plusDI > minusDI : minusDI > plusDI;
+  if (strong && diAligned) {
+    return {
+      module: "ADX trend strength",
+      score: 0,
+      reason: `ADX ${round(adxValue, 1)} confirms a strong ${direction} trend`
+    };
+  }
+  if (!strong) {
+    return {
+      module: "ADX trend strength",
+      score: -config.ADX_CHOP_PENALTY,
+      reason: `ADX ${round(adxValue, 1)} below ${config.ADX_TREND_THRESHOLD}: choppy, no tradable trend`
+    };
+  }
+  return {
+    module: "ADX trend strength",
+    score: -config.ADX_CHOP_PENALTY,
+    reason: `ADX ${round(adxValue, 1)} strong but directional indicators oppose ${direction}`
   };
 }
 
@@ -138,9 +179,10 @@ function buildSignal(
   const wick = wickScore(candles, direction);
   const preliminaryScores = [
     trendScore(candles, direction),
+    adxScore(config, candles, direction),
     rsiScore(candles, direction),
     macdScore(candles, direction),
-    volumeScore(candles),
+    volumeScore(config, candles, direction),
     wick,
     timeframeScore(candlesByTimeframe, direction),
     markovRegime.moduleScore

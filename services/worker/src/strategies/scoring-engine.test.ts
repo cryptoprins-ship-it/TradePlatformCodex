@@ -42,6 +42,27 @@ describe("generateSignals", () => {
     expect(signalsWithoutSweep.every((signal) => signal.reason.includes("liquidity sweep required before papertrade"))).toBe(true);
   });
 
+  it("penalises a counter-trend trade via ADX strength and OBV pressure", () => {
+    const config = loadConfig({ ENABLE_LIVE_TRADING: "false", SYMBOLS: "BTCUSDT" });
+    const candlesByTimeframe = {
+      "5m": candlesFor("5m"),
+      "15m": candlesFor("15m"),
+      "1h": candlesFor("1h"),
+      "4h": candlesFor("4h")
+    };
+
+    const signals = generateSignals(config, "BTCUSDT", candlesByTimeframe);
+    const long5m = signals.find((signal) => signal.timeframe === "5m" && signal.direction === "LONG");
+    const short5m = signals.find((signal) => signal.timeframe === "5m" && signal.direction === "SHORT");
+
+    // Candles trend down, so SHORT trades with the trend and LONG fights it.
+    expect(short5m?.reason).toContain("OBV pressure flows with SHORT");
+    expect(short5m?.reason).toMatch(/ADX .* confirms a strong SHORT trend/);
+    expect(long5m?.reason).toContain("OBV pressure opposes the trade");
+    expect(long5m?.reason).toMatch(/ADX .* (choppy|oppose)/);
+    expect((short5m?.score ?? 0)).toBeGreaterThan(long5m?.score ?? 0);
+  });
+
   it("generates signals for configured alt symbols", () => {
     const config = loadConfig({
       ENABLE_LIVE_TRADING: "false",

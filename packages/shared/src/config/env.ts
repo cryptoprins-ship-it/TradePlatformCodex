@@ -58,6 +58,16 @@ const envSchema = z.object({
   TRAIL_WEAK_ATR_MULT: numberString(1.8),
   TRAIL_CHOP_ATR_MULT: numberString(1),
   TRAIL_STRONG_CONFIDENCE: numberString(0.6),
+  // ADX trend-strength gate: below the threshold price is chopping and
+  // trend-following entries whipsaw, so the setup is penalised. Strong ADX with
+  // matching directional indicators passes clean.
+  ADX_TREND_THRESHOLD: numberString(20),
+  ADX_CHOP_PENALTY: numberString(15),
+  // OBV (volume-direction) confirmation: is buying/selling pressure flowing with
+  // the trade? SMA length sets the trend baseline, momentum length the lookback
+  // for rising/falling.
+  OBV_SMA_LENGTH: numberString(55),
+  OBV_MOMENTUM_LENGTH: numberString(3),
   MARKOV_REGIME_ENABLED: booleanString.default("true"),
   MARKOV_REGIME_PENALTY: numberString(25),
   MARKOV_REGIME_VOLATILE_PENALTY: numberString(35),
