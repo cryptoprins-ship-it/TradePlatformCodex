@@ -143,21 +143,6 @@ function chooseTrailMultiple(config: AppConfig, regime: MarketRegime, confidence
   return confidence >= config.TRAIL_STRONG_CONFIDENCE ? config.TRAIL_STRONG_ATR_MULT : config.TRAIL_WEAK_ATR_MULT;
 }
 
-function setupQualityGate(config: AppConfig, hasLiquiditySweep: boolean, rawScore: number): ModuleScore {
-  const cappedRawScore = clampScore(rawScore);
-  const configuredCap = Number.isFinite(config.MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP) ? config.MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP : 74;
-  const maxScoreWithoutSweep = Math.min(configuredCap, config.MIN_CONFIDENCE_SCORE - 1);
-  const penalty = hasLiquiditySweep ? 0 : Math.min(0, maxScoreWithoutSweep - cappedRawScore);
-
-  return {
-    module: "Setup quality gate",
-    score: penalty,
-    reason: hasLiquiditySweep
-      ? "liquidity sweep confirms entry trigger"
-      : `liquidity sweep required before papertrade; score capped at ${maxScoreWithoutSweep}`
-  };
-}
-
 function buildSignal(
   config: AppConfig,
   symbol: SupportedSymbol,
@@ -187,8 +172,7 @@ function buildSignal(
     timeframeScore(candlesByTimeframe, direction),
     markovRegime.moduleScore
   ];
-  const rawScore = preliminaryScores.reduce((sum, module) => sum + module.score, 0);
-  const moduleScores = [...preliminaryScores, setupQualityGate(config, wick.score > 0, rawScore)];
+  const moduleScores = preliminaryScores;
   const score = clampScore(moduleScores.reduce((sum, module) => sum + module.score, 0));
   const reason = moduleScores.map((module) => module.reason).join("; ");
 

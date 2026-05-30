@@ -21,7 +21,7 @@ function candlesFor(timeframe: Timeframe, symbol: Candle["symbol"] = "BTCUSDT"):
 }
 
 describe("generateSignals", () => {
-  it("caps signals without a liquidity sweep below the default trade threshold", () => {
+  it("scores no-sweep signals on merit instead of hard-capping them", () => {
     const config = loadConfig({
       ENABLE_LIVE_TRADING: "false",
       SYMBOLS: "BTCUSDT",
@@ -38,8 +38,15 @@ describe("generateSignals", () => {
     const signalsWithoutSweep = signals.filter((signal) => signal.reason.includes("no clean liquidity sweep"));
 
     expect(signalsWithoutSweep.length).toBeGreaterThan(0);
-    expect(signalsWithoutSweep.every((signal) => signal.score <= 74)).toBe(true);
-    expect(signalsWithoutSweep.every((signal) => signal.reason.includes("liquidity sweep required before papertrade"))).toBe(true);
+    // The setup-quality gate is gone: no module caps the score, and the old
+    // "liquidity sweep required" penalty no longer appears.
+    expect(signals.every((signal) => signal.moduleScores.every((module) => module.module !== "Setup quality gate"))).toBe(true);
+    expect(signals.every((signal) => !signal.reason.includes("liquidity sweep required"))).toBe(true);
+    // Score is the honest clamped sum of the remaining modules, not MIN - 1.
+    for (const signal of signalsWithoutSweep) {
+      const expected = Math.max(0, Math.min(100, Math.round(signal.moduleScores.reduce((sum, module) => sum + module.score, 0))));
+      expect(signal.score).toBe(expected);
+    }
   });
 
   it("penalises a counter-trend trade via ADX strength and OBV pressure", () => {
