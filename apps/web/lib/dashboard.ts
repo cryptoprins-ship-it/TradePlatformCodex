@@ -1,5 +1,31 @@
 import { loadConfig } from "@tradeplatformcodex/shared";
+import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
+
+// Group skipped-trade reasons into a handful of buckets so the dashboard can
+// show WHY signals are skipped instead of a flood of individual rows. Reasons
+// are logged per skip in bot_logs.context.reasons by the risk manager.
+async function summarizeSkipReasons(from?: Date): Promise<{ bucket: string; count: number }[]> {
+  const rows = await prisma.$queryRaw<{ bucket: string; count: bigint }[]>`
+    SELECT
+      CASE
+        WHEN reason LIKE 'max open trades%' THEN 'Max open trades'
+        WHEN reason LIKE 'max trades per day%' THEN 'Max trades/day'
+        WHEN reason LIKE 'score %below required threshold%' THEN 'Below score threshold'
+        WHEN reason LIKE 'daily loss limit%' THEN 'Daily loss limit'
+        WHEN reason LIKE 'KILL_SWITCH%' THEN 'Kill switch'
+        WHEN reason LIKE 'missing %' THEN 'Missing stop/target/entry'
+        ELSE 'Other'
+      END AS bucket,
+      count(*) AS count
+    FROM bot_logs, LATERAL jsonb_array_elements_text(context->'reasons') AS reason
+    WHERE message = 'Trade skipped'
+      ${from ? Prisma.sql`AND "createdAt" >= ${from}` : Prisma.empty}
+    GROUP BY bucket
+    ORDER BY count DESC
+  `;
+  return rows.map((row) => ({ bucket: row.bucket, count: Number(row.count) }));
+}
 
 type ConfigSnapshot = Record<string, unknown>;
 
@@ -175,6 +201,8 @@ export async function getDashboardData(options: { from?: Date } = {}) {
     })
   ]);
 
+  const skipReasonGroups = await summarizeSkipReasons(from);
+
   const wins = closedTrades.filter((trade) => trade.result === "WIN").length;
   const losses = closedTrades.filter((trade) => trade.result === "LOSS").length;
   const grossProfit = closedTrades.reduce((sum, trade) => {
@@ -199,6 +227,7 @@ export async function getDashboardData(options: { from?: Date } = {}) {
     openTrades,
     closedTrades,
     skippedSignals,
+    skipReasonGroups,
     logs,
     regimeBreakdown: summarizeByRegime(closedTrades),
     currentRegime:

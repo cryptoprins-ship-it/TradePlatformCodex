@@ -68,6 +68,38 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
       </section>
 
       <section className="panel" style={{ marginTop: 18 }}>
+        <h2>Why signals are skipped</h2>
+        <p className="muted">Grouped reasons across skipped signals. Risk caps usually dominate, not low score.</p>
+        <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Reason</th>
+              <th>Count</th>
+              <th>Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.skipReasonGroups.length === 0 ? (
+              <tr><td colSpan={3} className="muted">No skipped signals yet.</td></tr>
+            ) : (
+              (() => {
+                const total = data.skipReasonGroups.reduce((sum, row) => sum + row.count, 0);
+                return data.skipReasonGroups.map((row) => (
+                  <tr key={row.bucket}>
+                    <td data-label="Reason"><span className="cell-label">Reason</span>{row.bucket}</td>
+                    <td data-label="Count"><span className="cell-label">Count</span>{row.count.toLocaleString()}</td>
+                    <td data-label="Share"><span className="cell-label">Share</span>{total === 0 ? "0%" : `${((row.count / total) * 100).toFixed(0)}%`}</td>
+                  </tr>
+                ));
+              })()
+            )}
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section className="panel" style={{ marginTop: 18 }}>
         <h2>Performance by trend</h2>
         <p className="muted">Which market regime (at entry) the bot trades best in. Sorted by P/L.</p>
         <div className="table-wrap">
