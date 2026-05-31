@@ -2,6 +2,10 @@
 .env.*
 !.env.example
 node_modules/
+# No committed lockfile by design: a fresh `npm install` pulls correct
+# platform binaries; a committed (often Windows-generated) lockfile dropped
+# the Linux swc binaries and tangled CI.
+package-lock.json
 .next/
 dist/
 build/
