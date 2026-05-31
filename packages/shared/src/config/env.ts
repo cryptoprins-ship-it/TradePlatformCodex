@@ -79,6 +79,9 @@ const envSchema = z.object({
   // the right side of the slow EMA.
   EMA_FAST: numberString(8),
   EMA_SLOW: numberString(50),
+  // Bars within which a fast/slow EMA cross still counts as "fresh" (a momentum
+  // trigger) rather than an established stack.
+  EMA_CROSS_LOOKBACK: numberString(3),
   // ADX trend-strength gate: below the threshold price is chopping and
   // trend-following entries whipsaw, so the setup is penalised. Strong ADX with
   // matching directional indicators passes clean.

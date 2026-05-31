@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Candle } from "@tradeplatformcodex/shared";
-import { adx, atr, bollinger, ema, findSwingHigh, findSwingLow, isFlashWick, isInSqueeze, macd, obv, rsi } from "./indicators";
+import { adx, atr, bollinger, ema, findSwingHigh, findSwingLow, isFlashWick, isInSqueeze, macd, obv, recentEmaCross, rsi } from "./indicators";
 
 function candle(close: number, volume = 100): Candle {
   return {
@@ -102,6 +102,17 @@ describe("indicators", () => {
 
     // Range is large but the body fills it (a real move, not a wick) -> not blocked.
     expect(isFlashWick([...calm, trend], 3, 0.35)).toBe(false);
+  });
+
+  it("detects a fresh bullish EMA cross and ignores an old one", () => {
+    // Flat (fast == slow, no cross) then a rise: the fast EMA pulls above the slow
+    // on the first up-bar, a BULLISH cross inside the lookback window.
+    const closes = [...Array.from({ length: 50 }, () => 100), 101, 102, 103, 104, 105];
+
+    expect(recentEmaCross(closes, 8, 50, 5)).toBe("BULLISH");
+    // A long, steady uptrend with no recent cross returns null.
+    const steady = Array.from({ length: 60 }, (_, index) => 100 + index);
+    expect(recentEmaCross(steady, 8, 50, 3)).toBeNull();
   });
 
   it("computes Bollinger bands around the mean", () => {

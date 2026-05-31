@@ -153,6 +153,32 @@ export function obv(candles: Candle[]): number[] {
   return result;
 }
 
+// Most recent EMA cross within `lookback` bars: fast crossing above slow is
+// BULLISH, below is BEARISH. Scans newest-first and returns the first cross found,
+// or null if the pair hasn't crossed inside the window (a long-established trend).
+export function recentEmaCross(
+  closes: number[],
+  fast: number,
+  slow: number,
+  lookback: number
+): "BULLISH" | "BEARISH" | null {
+  const fastSeries = ema(closes, fast);
+  const slowSeries = ema(closes, slow);
+  const start = closes.length - 1;
+  const end = Math.max(1, closes.length - lookback);
+  for (let index = start; index >= end; index -= 1) {
+    const current = (fastSeries[index] ?? 0) - (slowSeries[index] ?? 0);
+    const previous = (fastSeries[index - 1] ?? 0) - (slowSeries[index - 1] ?? 0);
+    if (previous <= 0 && current > 0) {
+      return "BULLISH";
+    }
+    if (previous >= 0 && current < 0) {
+      return "BEARISH";
+    }
+  }
+  return null;
+}
+
 function standardDeviation(values: number[]): number {
   if (values.length === 0) {
     return 0;

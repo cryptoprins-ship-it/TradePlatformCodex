@@ -24,6 +24,7 @@ function buildRunSnapshot(config: AppConfig): Record<string, unknown> {
     CONTEXT_TIMEFRAMES: config.CONTEXT_TIMEFRAMES,
     EMA_FAST: config.EMA_FAST,
     EMA_SLOW: config.EMA_SLOW,
+    EMA_CROSS_LOOKBACK: config.EMA_CROSS_LOOKBACK,
     START_BALANCE: config.START_BALANCE,
     MAX_RISK_PER_TRADE: config.MAX_RISK_PER_TRADE,
     MAX_DAILY_LOSS: config.MAX_DAILY_LOSS,

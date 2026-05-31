@@ -19,7 +19,8 @@ import {
   isFlashWick,
   isInSqueeze,
   macd,
-  obv
+  obv,
+  recentEmaCross
 } from "./indicators";
 import { assessMarkovRegime, type MarketRegime } from "./markov-regime";
 
@@ -29,22 +30,26 @@ function latestClose(candles: Candle[]): number {
   return candles.at(-1)?.close ?? 0;
 }
 
-// Trend filter on a configurable fast/slow EMA pair. Scalp uses a fast pair
-// (8/50), swing a slow macro pair (50/200). Aligned when the EMAs stack the
-// trade's way and price sits on the right side of the slow EMA.
+// Trend trigger on a configurable fast/slow EMA pair (scalp 8/50, swing 50/200).
+// A FRESH cross in the trade direction (fast crossing slow within
+// EMA_CROSS_LOOKBACK bars) is the strongest read; an established stack still
+// scores, but lower; no alignment is penalised.
 function trendScore(config: AppConfig, candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore {
   const closes = candles.map((candle) => candle.close);
   const fast = ema(closes, config.EMA_FAST).at(-1) ?? closes.at(-1) ?? 0;
   const slow = ema(closes, config.EMA_SLOW).at(-1) ?? closes.at(-1) ?? 0;
   const price = latestClose(candles);
-  const aligned = direction === "LONG" ? fast > slow && price > slow : fast < slow && price < slow;
-  return {
-    module: "EMA trendfilter",
-    score: aligned ? 20 : 5,
-    reason: aligned
-      ? `EMA${config.EMA_FAST}/${config.EMA_SLOW} stacked ${direction.toLowerCase()}`
-      : `EMA${config.EMA_FAST}/${config.EMA_SLOW} not aligned for ${direction.toLowerCase()}`
-  };
+  const stacked = direction === "LONG" ? fast > slow && price > slow : fast < slow && price < slow;
+  const cross = recentEmaCross(closes, config.EMA_FAST, config.EMA_SLOW, config.EMA_CROSS_LOOKBACK);
+  const freshCross = direction === "LONG" ? cross === "BULLISH" : cross === "BEARISH";
+  const pair = `EMA${config.EMA_FAST}/${config.EMA_SLOW}`;
+  if (freshCross) {
+    return { module: "EMA cross", score: 20, reason: `${pair} fresh ${direction.toLowerCase()} cross` };
+  }
+  if (stacked) {
+    return { module: "EMA cross", score: 12, reason: `${pair} stacked ${direction.toLowerCase()}, no fresh cross` };
+  }
+  return { module: "EMA cross", score: 5, reason: `${pair} not aligned for ${direction.toLowerCase()}` };
 }
 
 function macdScore(candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore {
