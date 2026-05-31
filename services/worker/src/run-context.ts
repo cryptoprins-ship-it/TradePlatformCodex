@@ -60,6 +60,7 @@ function buildRunSnapshot(config: AppConfig): Record<string, unknown> {
     SWING_STOP_BUFFER_ATR: config.SWING_STOP_BUFFER_ATR,
     SWING_STOP_MAX_ATR: config.SWING_STOP_MAX_ATR,
     DAILY_REPORT_ENABLED: config.DAILY_REPORT_ENABLED,
+    TELEGRAM_SIGNAL_ALERTS: config.TELEGRAM_SIGNAL_ALERTS,
     BOT_ENABLED: config.BOT_ENABLED,
     KILL_SWITCH: config.KILL_SWITCH
   };

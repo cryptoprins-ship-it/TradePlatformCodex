@@ -65,7 +65,11 @@ export async function runWorkerCycle(): Promise<void> {
       signalCount += signals.length;
       for (const signal of signals) {
         const signalId = await persistSignal(signal);
-        await sendTelegram(config, formatSignalAlert(signal));
+        // Per-signal Telegram alerts are off by default: with a multi-symbol basket
+        // they flood the channel. The once-a-day report is the intended summary.
+        if (config.TELEGRAM_SIGNAL_ALERTS) {
+          await sendTelegram(config, formatSignalAlert(signal));
+        }
         await openPaperTrade(config, { ...signal, signalId }, { resolvePrice: (target) => client.getTickerPrice(target) });
       }
     } catch (error: unknown) {

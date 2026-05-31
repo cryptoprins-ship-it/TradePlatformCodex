@@ -162,6 +162,9 @@ const envSchema = z.object({
   // Daily report: once per local day, each worker posts its strategy's previous-day
   // summary (trades, winrate, P/L %, P/L money, profit factor, avg R) to Telegram.
   DAILY_REPORT_ENABLED: booleanString.default("true"),
+  // Per-signal Telegram alerts. Off by default — with a multi-symbol basket they
+  // flood the channel every cycle. The daily report is the intended summary.
+  TELEGRAM_SIGNAL_ALERTS: booleanString.default("false"),
   MARKOV_REGIME_ENABLED: booleanString.default("true"),
   MARKOV_REGIME_PENALTY: numberString(25),
   MARKOV_REGIME_VOLATILE_PENALTY: numberString(35),
