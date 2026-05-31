@@ -1,7 +1,28 @@
 import { z } from "zod";
 import type { SupportedSymbol } from "../types/trading";
 
-export const SUPPORTED_SYMBOLS: SupportedSymbol[] = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "WLDUSDT"];
+// Sector basket: one (or two for AI) liquid representative per crypto sector, all
+// verified live as USDT spot pairs on MEXC. Gold (PAXG/XAUT) is intentionally
+// absent — MEXC has no USDT pair for it.
+export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
+  "BTCUSDT", // L1 major / digital gold
+  "ETHUSDT", // smart-contract L1
+  "SOLUSDT", // high-perf L1
+  "XRPUSDT", // payments
+  "BNBUSDT", // exchange token
+  "DOGEUSDT", // meme
+  "PENGUUSDT", // NFT
+  "ZECUSDT", // privacy
+  "WLDUSDT", // identity
+  "TAOUSDT", // AI
+  "FETUSDT", // AI
+  "ONDOUSDT", // RWA
+  "AAVEUSDT", // DeFi
+  "INJUSDT", // interop / infra
+  "AXSUSDT", // gaming
+  "BERAUSDT", // new L1
+  "ENSOUSDT" // intent / DeFi infra
+];
 
 const booleanString = z
   .string()

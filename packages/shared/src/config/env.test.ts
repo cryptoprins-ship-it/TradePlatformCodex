@@ -24,11 +24,21 @@ describe("loadConfig", () => {
     expect(config.SYMBOLS).toEqual(["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "WLDUSDT"]);
   });
 
+  it("accepts the full sector basket", () => {
+    const config = loadConfig({
+      ENABLE_LIVE_TRADING: "false",
+      SYMBOLS: "BTCUSDT,BNBUSDT,DOGEUSDT,ZECUSDT,TAOUSDT,FETUSDT,ONDOUSDT,AAVEUSDT,INJUSDT,AXSUSDT,BERAUSDT,ENSOUSDT,PENGUUSDT"
+    });
+
+    expect(config.SYMBOLS).toContain("AAVEUSDT");
+    expect(config.SYMBOLS).toContain("PENGUUSDT");
+  });
+
   it("rejects unsupported symbols", () => {
     expect(() =>
       loadConfig({
         ENABLE_LIVE_TRADING: "false",
-        SYMBOLS: "BTCUSDT,DOGEUSDT"
+        SYMBOLS: "BTCUSDT,FAKEUSDT"
       })
     ).toThrow();
   });

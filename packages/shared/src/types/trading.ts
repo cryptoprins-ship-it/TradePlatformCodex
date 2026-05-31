@@ -2,7 +2,24 @@ export type Timeframe = "5m" | "15m" | "1h" | "4h" | "1d";
 export type Direction = "LONG" | "SHORT";
 export type SignalStatus = "DETECTED" | "TRADE_OPENED" | "SKIPPED";
 export type TradeStatus = "OPEN" | "TP1_HIT" | "TP2_HIT" | "STOP_LOSS_HIT" | "CLOSED" | "CANCELLED" | "SKIPPED";
-export type SupportedSymbol = "BTCUSDT" | "ETHUSDT" | "SOLUSDT" | "XRPUSDT" | "WLDUSDT";
+export type SupportedSymbol =
+  | "BTCUSDT"
+  | "ETHUSDT"
+  | "SOLUSDT"
+  | "XRPUSDT"
+  | "WLDUSDT"
+  | "ZECUSDT"
+  | "INJUSDT"
+  | "BERAUSDT"
+  | "ENSOUSDT"
+  | "ONDOUSDT"
+  | "AXSUSDT"
+  | "PENGUUSDT"
+  | "TAOUSDT"
+  | "FETUSDT"
+  | "BNBUSDT"
+  | "DOGEUSDT"
+  | "AAVEUSDT";
 
 export interface Candle {
   symbol: SupportedSymbol;
