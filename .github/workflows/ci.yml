@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel an in-flight run when a newer commit lands on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Build/typecheck must not need real secrets. A dummy URL satisfies the Prisma
+    # client and the worker config; every web page is force-dynamic so the
+    # production build never connects to the database.
+    env:
+      DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+      ENABLE_LIVE_TRADING: "false"
+      SYMBOLS: BTCUSDT
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Next 14 is supported squarely on Node 20 LTS.
+          node-version: 20
+
+      # No committed lockfile (it was dropped to avoid cross-platform binary
+      # tangles), so a fresh install fetches the correct Linux binaries.
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      # Shared must build first: the worker and web import its compiled output.
+      - name: Build shared
+        run: npm run build --workspace @tradeplatformcodex/shared
+
+      - name: Typecheck shared
+        run: npm run lint --workspace @tradeplatformcodex/shared
+
+      - name: Typecheck worker
+        run: npm run lint --workspace @tradeplatformcodex/worker
+
+      # next lint is unavailable under the hoisted Next major; tsc is the
+      # authoritative typecheck for the web app.
+      - name: Typecheck web
+        run: npx tsc --noEmit -p apps/web/tsconfig.json
+
+      - name: Test shared
+        run: npm run test --workspace @tradeplatformcodex/shared
+
+      - name: Test worker
+        run: npm run test --workspace @tradeplatformcodex/worker
+
+      - name: Build web
+        run: npm run build --workspace @tradeplatformcodex/web
