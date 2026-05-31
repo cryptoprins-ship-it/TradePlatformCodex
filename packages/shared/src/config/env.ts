@@ -64,6 +64,11 @@ const envSchema = z.object({
   MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP: numberString(74),
   MAX_TRADES_PER_DAY: numberString(3),
   WORKER_INTERVAL_SECONDS: numberString(60),
+  // How often open trades are monitored for exits (a cheap ticker-only pass)
+  // BETWEEN full signal cycles. Scalp sets this low (e.g. 15s) so 5m stops/targets
+  // aren't checked on minute-old prices, without re-fetching candles each time.
+  // >= WORKER_INTERVAL_SECONDS disables the fast pass (one combined cycle).
+  MONITOR_INTERVAL_SECONDS: numberString(60),
   // Modeled adverse slippage (basis points) applied to stop-loss fills, which
   // behave like market orders. Bounds the recorded loss to the stop level plus
   // this buffer instead of wherever the coarse poll happens to catch price.

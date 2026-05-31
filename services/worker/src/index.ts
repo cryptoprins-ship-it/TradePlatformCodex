@@ -84,6 +84,23 @@ export async function runWorkerCycle(): Promise<void> {
   });
 }
 
+// Cheap exit-monitoring pass: one ticker price per symbol, then evaluate open
+// trades (trailing stop, SL/TP). No candle fetch or signal generation, so it can
+// run far more often than the full cycle to catch fast exits between signals.
+async function runMonitorPass(): Promise<void> {
+  for (const symbol of config.SYMBOLS as SupportedSymbol[]) {
+    try {
+      const currentPrice = await client.getTickerPrice(symbol);
+      await monitorOpenPaperTrades(config, symbol, currentPrice);
+    } catch (error: unknown) {
+      await logBot("error", "Monitor pass failed", {
+        symbol,
+        error: error instanceof Error ? error.message : "unknown error"
+      });
+    }
+  }
+}
+
 async function runWorkerLoop(): Promise<void> {
   await ensureActiveRun(config);
   await logBot("info", "Worker loop started", {
@@ -91,6 +108,9 @@ async function runWorkerLoop(): Promise<void> {
     symbols: config.SYMBOLS,
     intervalSeconds: config.WORKER_INTERVAL_SECONDS
   });
+
+  const fullInterval = config.WORKER_INTERVAL_SECONDS;
+  const monitorStep = Math.min(config.MONITOR_INTERVAL_SECONDS, fullInterval);
 
   while (true) {
     try {
@@ -101,7 +121,21 @@ async function runWorkerLoop(): Promise<void> {
       });
     }
 
-    await sleep(config.WORKER_INTERVAL_SECONDS * 1000);
+    // Fill the gap until the next full cycle with cheap monitor passes. When
+    // MONITOR_INTERVAL >= WORKER_INTERVAL this collapses to a single sleep.
+    let elapsed = 0;
+    while (elapsed + monitorStep < fullInterval) {
+      await sleep(monitorStep * 1000);
+      elapsed += monitorStep;
+      try {
+        await runMonitorPass();
+      } catch (error: unknown) {
+        await logBot("error", "Monitor pass failed", {
+          error: error instanceof Error ? error.message : "unknown error"
+        });
+      }
+    }
+    await sleep((fullInterval - elapsed) * 1000);
   }
 }
 

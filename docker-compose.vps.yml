@@ -46,6 +46,9 @@ services:
       EXTENSION_ATR_MULT: "2"
       # Intraday VWAP confluence is a scalp-only edge.
       VWAP_ENABLED: "true"
+      # Check exits every 15s (5m stops shouldn't wait a full minute) while signals
+      # still regenerate every WORKER_INTERVAL_SECONDS.
+      MONITOR_INTERVAL_SECONDS: "15"
     depends_on:
       - db
       - redis
