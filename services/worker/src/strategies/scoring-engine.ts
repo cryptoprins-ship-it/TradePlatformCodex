@@ -130,9 +130,12 @@ function timeframeScore(config: AppConfig, candlesByTimeframe: CandleMap, direct
   const alignedCount = context.filter((timeframe) => {
     const candles = candlesByTimeframe[timeframe];
     const closes = candles.map((candle) => candle.close);
-    const ema200 = ema(closes, 200).at(-1) ?? closes.at(-1) ?? 0;
+    // Macro filter uses the strategy's own slow EMA, not a fixed 200: EMA200 is
+    // meaningless on a scalp's fast context (EMA50), so scalp checks 50 and swing
+    // checks 200.
+    const emaSlow = ema(closes, config.EMA_SLOW).at(-1) ?? closes.at(-1) ?? 0;
     const price = latestClose(candles);
-    return direction === "LONG" ? price > ema200 : price < ema200;
+    return direction === "LONG" ? price > emaSlow : price < emaSlow;
   }).length;
   return {
     module: "Multi-timeframe context",
