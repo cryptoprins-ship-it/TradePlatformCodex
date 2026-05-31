@@ -40,7 +40,7 @@ const envSchema = z.object({
     .string()
     .default("5m,15m,1h,4h")
     .transform((value) => value.split(",").map((timeframe) => timeframe.trim()).filter(Boolean)),
-  START_BALANCE: numberString(10000),
+  START_BALANCE: numberString(1000),
   MAX_RISK_PER_TRADE: numberString(1),
   MAX_DAILY_LOSS: numberString(3),
   MAX_OPEN_TRADES: numberString(1),

@@ -203,6 +203,16 @@ export async function getDashboardData(options: { from?: Date } = {}) {
 
   const skipReasonGroups = await summarizeSkipReasons(from);
 
+  // Money view: balance = starting balance + realized P/L (compounding). Realized
+  // P/L sums pnlAmount over every closed trade in scope, not just the 50 shown.
+  const realizedAgg = await prisma.trade.aggregate({
+    _sum: { pnlAmount: true },
+    where: { pnlAmount: { not: null }, ...closedFilter }
+  });
+  const startBalance = config.START_BALANCE;
+  const realizedPnlAmount = Number(realizedAgg._sum.pnlAmount ?? 0);
+  const balance = startBalance + realizedPnlAmount;
+
   const wins = closedTrades.filter((trade) => trade.result === "WIN").length;
   const losses = closedTrades.filter((trade) => trade.result === "LOSS").length;
   const grossProfit = closedTrades.reduce((sum, trade) => {
@@ -228,6 +238,9 @@ export async function getDashboardData(options: { from?: Date } = {}) {
     closedTrades,
     skippedSignals,
     skipReasonGroups,
+    startBalance,
+    realizedPnlAmount,
+    balance,
     logs,
     regimeBreakdown: summarizeByRegime(closedTrades),
     currentRegime:

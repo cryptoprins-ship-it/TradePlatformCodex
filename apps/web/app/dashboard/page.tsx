@@ -49,6 +49,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
         <Metric label="Open papertrades" value={data.openTrades.length} />
         <Metric label="Closed papertrades" value={data.closedTrades.length} />
         <Metric label="Skipped signals" value={data.skippedSignals} />
+        <Metric label="Balance (€)" value={`€${data.balance.toFixed(2)}`} />
+        <Metric label="Realized P/L (€)" value={`€${data.realizedPnlAmount.toFixed(2)}`} />
+        <Metric label="Start balance (€)" value={`€${data.startBalance.toFixed(2)}`} />
         <Metric label="Winrate" value={`${data.winrate.toFixed(1)}%`} />
         <Metric label="P/L" value={`${data.pnl.toFixed(2)}%`} />
         <Metric label="Profit factor" value={data.profitFactor.toFixed(2)} />

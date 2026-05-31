@@ -126,6 +126,8 @@ model Trade {
   exitPrice           Decimal?    @db.Decimal(20, 8)
   status              TradeStatus @default(OPEN)
   pnlPercentage       Decimal?    @db.Decimal(12, 4)
+  positionNotional    Decimal?    @db.Decimal(20, 8)
+  pnlAmount           Decimal?    @db.Decimal(20, 8)
   riskReward          Decimal     @db.Decimal(12, 4)
   trailAtrMultiple    Decimal?    @db.Decimal(6, 3)
   entryRegime         String?

@@ -3,6 +3,17 @@ import { prisma } from "../db";
 import { logBot } from "../logging/bot-log";
 import { getActiveRunId } from "../run-context";
 import { evaluateRisk } from "../risk/risk-manager";
+import { computePnlAmount, computePositionNotional } from "./position-sizing";
+
+// Current account balance for the run: the starting balance plus realized P/L
+// from already-closed trades. Compounding — new trades size off this.
+async function currentBalance(config: AppConfig, runId: string | null): Promise<number> {
+  const realized = await prisma.trade.aggregate({
+    _sum: { pnlAmount: true },
+    where: { ...(runId ? { runId } : {}), pnlAmount: { not: null } }
+  });
+  return config.START_BALANCE + Number(realized._sum.pnlAmount ?? 0);
+}
 
 export async function openPaperTrade(config: AppConfig, signal: PaperTradeInput): Promise<string | null> {
   const runId = getActiveRunId();
@@ -25,6 +36,9 @@ export async function openPaperTrade(config: AppConfig, signal: PaperTradeInput)
   const rewardDistance = Math.abs(signal.takeProfit2 - signal.entryPrice);
   const riskReward = riskDistance === 0 ? 0 : rewardDistance / riskDistance;
 
+  const balance = await currentBalance(config, runId);
+  const positionNotional = computePositionNotional(balance, config.MAX_RISK_PER_TRADE, signal.entryPrice, signal.stopLoss);
+
   const trade = await prisma.trade.create({
     data: {
       ...(runId ? { runId } : {}),
@@ -37,6 +51,7 @@ export async function openPaperTrade(config: AppConfig, signal: PaperTradeInput)
       takeProfit1: signal.takeProfit1,
       takeProfit2: signal.takeProfit2,
       confidenceScore: signal.score,
+      positionNotional,
       riskReward,
       trailAtrMultiple: signal.trailAtrMultiple,
       entryRegime: signal.entryRegime,
@@ -110,6 +125,7 @@ export async function monitorOpenPaperTrades(config: AppConfig, symbol: Supporte
           : stopLoss * (1 + slippageBps / 10000)
         : tp2;
       const pnlPercentage = ((exitPrice - entry) / entry) * 100 * (isLong ? 1 : -1);
+      const pnlAmount = computePnlAmount(Number(trade.positionNotional ?? 0), pnlPercentage);
       const triggerLevel = stopHit ? stopLoss : tp2;
       const deviationBps = triggerLevel === 0 ? 0 : Math.abs((currentPrice - triggerLevel) / triggerLevel) * 10000;
       await prisma.trade.update({
@@ -118,6 +134,7 @@ export async function monitorOpenPaperTrades(config: AppConfig, symbol: Supporte
           status: stopHit ? "STOP_LOSS_HIT" : "TP2_HIT",
           exitPrice,
           pnlPercentage,
+          pnlAmount,
           // Use realized pnl sign: a stop moved to breakeven after TP1 scratches
           // at ~0% and must not be miscounted as a loss.
           result: pnlPercentage >= 0 ? "WIN" : "LOSS",
