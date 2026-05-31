@@ -104,6 +104,16 @@ const envSchema = z.object({
   // and a setup scores at or above this, the weakest open trade in the binding
   // pool is closed to free a slot — but only if the newcomer outscores it.
   GOLDEN_SCORE: numberString(90),
+  // Structure-aware stops: place the stop just beyond the most recent swing low
+  // (LONG) / swing high (SHORT) plus a small ATR buffer, instead of a flat ATR
+  // distance. LOOKBACK is the bars each side of a pivot; BUFFER_ATR pads past the
+  // level; MAX_ATR caps how far a structural stop may sit before falling back to
+  // the ATR proxy (a far structure is unreliable). Take-profits keep the same R
+  // multiples off whichever risk distance is used.
+  SWING_STRUCTURE_ENABLED: booleanString.default("true"),
+  SWING_POINT_LOOKBACK: numberString(5),
+  SWING_STOP_BUFFER_ATR: numberString(0.25),
+  SWING_STOP_MAX_ATR: numberString(4),
   // Keltner-based volatility modules. KELTNER_PERIOD is the shared EMA/Bollinger/
   // ATR lookback. Extension gate: penalise entries already stretched
   // EXTENSION_ATR_MULT * ATR beyond the mean in the trade direction (don't chase

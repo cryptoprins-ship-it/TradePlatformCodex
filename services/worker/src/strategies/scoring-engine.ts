@@ -8,7 +8,19 @@ import {
   type Timeframe,
   type TradingSignal
 } from "@tradeplatformcodex/shared";
-import { adx, atr, ema, hasBearishShakeout, hasBullishShakeout, isFlashWick, isInSqueeze, macd, obv } from "./indicators";
+import {
+  adx,
+  atr,
+  ema,
+  findSwingHigh,
+  findSwingLow,
+  hasBearishShakeout,
+  hasBullishShakeout,
+  isFlashWick,
+  isInSqueeze,
+  macd,
+  obv
+} from "./indicators";
 import { assessMarkovRegime, type MarketRegime } from "./markov-regime";
 
 type CandleMap = Record<Timeframe, Candle[]>;
@@ -193,6 +205,44 @@ function clampScore(score: number): number {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
+// Structure-aware stop: anchor the stop just beyond the most recent swing low
+// (LONG) / swing high (SHORT) plus an ATR buffer. Falls back to the flat ATR
+// proxy when structure is disabled, absent, on the wrong side of entry, or so far
+// that the implied risk exceeds SWING_STOP_MAX_ATR (an unreliable anchor).
+function chooseStop(
+  config: AppConfig,
+  candles: Candle[],
+  direction: "LONG" | "SHORT",
+  entryPrice: number,
+  atrProxy: number
+): { stopLoss: number; riskDistance: number } {
+  const flat = {
+    stopLoss: direction === "LONG" ? entryPrice - atrProxy : entryPrice + atrProxy,
+    riskDistance: atrProxy
+  };
+  if (!config.SWING_STRUCTURE_ENABLED) {
+    return flat;
+  }
+  const swing =
+    direction === "LONG"
+      ? findSwingLow(candles, config.SWING_POINT_LOOKBACK)
+      : findSwingHigh(candles, config.SWING_POINT_LOOKBACK);
+  if (swing === null) {
+    return flat;
+  }
+  const onCorrectSide = direction === "LONG" ? swing < entryPrice : swing > entryPrice;
+  if (!onCorrectSide) {
+    return flat;
+  }
+  const buffer = atrProxy * config.SWING_STOP_BUFFER_ATR;
+  const stopLoss = direction === "LONG" ? swing - buffer : swing + buffer;
+  const riskDistance = Math.abs(entryPrice - stopLoss);
+  if (riskDistance > atrProxy * config.SWING_STOP_MAX_ATR) {
+    return flat;
+  }
+  return { stopLoss, riskDistance };
+}
+
 // Trail width (ATR multiples) chosen at entry from the regime: a strong aligned
 // trend rides wide so winners run; chop, volatility, or a regime that fights the
 // trade direction locks tight to protect gains.
@@ -213,9 +263,11 @@ function buildSignal(
   const candles = candlesByTimeframe[timeframe];
   const entryPrice = latestClose(candles);
   const atrProxy = Math.max(entryPrice * 0.004, (candles.at(-1)?.high ?? entryPrice) - (candles.at(-1)?.low ?? entryPrice));
-  const stopLoss = direction === "LONG" ? entryPrice - atrProxy : entryPrice + atrProxy;
-  const takeProfit1 = direction === "LONG" ? entryPrice + atrProxy * 1.5 : entryPrice - atrProxy * 1.5;
-  const takeProfit2 = direction === "LONG" ? entryPrice + atrProxy * 2.5 : entryPrice - atrProxy * 2.5;
+  const { stopLoss, riskDistance } = chooseStop(config, candles, direction, entryPrice, atrProxy);
+  // Take-profits keep fixed R multiples off the chosen risk distance, so a wider
+  // structural stop scales the targets with it (R:R stays constant).
+  const takeProfit1 = direction === "LONG" ? entryPrice + riskDistance * 1.5 : entryPrice - riskDistance * 1.5;
+  const takeProfit2 = direction === "LONG" ? entryPrice + riskDistance * 2.5 : entryPrice - riskDistance * 2.5;
   const [regimeContext, regimeHigherContext] = config.MARKOV_CONTEXT_TIMEFRAMES as Timeframe[];
   const markovRegime = assessMarkovRegime(
     candlesByTimeframe[regimeContext] ?? candles,

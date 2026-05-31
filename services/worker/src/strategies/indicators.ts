@@ -187,6 +187,56 @@ export function isInSqueeze(candles: Candle[], period = 20, bbK = 2, kcMult = 1.
   return bands.upper < midKc + kcMult * range && bands.lower > midKc - kcMult * range;
 }
 
+// Most recent confirmed swing low: a bar whose low is the lowest within `lookback`
+// bars on EACH side. Confirmation needs `lookback` bars to its right, so the
+// newest possible swing sits at least `lookback` bars back. Returns the level or
+// null if none is confirmed. Swing high is the mirror (highest high both sides).
+export function findSwingLow(candles: Candle[], lookback = 5): number | null {
+  for (let index = candles.length - 1 - lookback; index >= lookback; index -= 1) {
+    const pivot = candles[index];
+    if (!pivot) {
+      continue;
+    }
+    let isSwing = true;
+    for (let side = index - lookback; side <= index + lookback; side += 1) {
+      if (side === index) {
+        continue;
+      }
+      if ((candles[side]?.low ?? Infinity) < pivot.low) {
+        isSwing = false;
+        break;
+      }
+    }
+    if (isSwing) {
+      return pivot.low;
+    }
+  }
+  return null;
+}
+
+export function findSwingHigh(candles: Candle[], lookback = 5): number | null {
+  for (let index = candles.length - 1 - lookback; index >= lookback; index -= 1) {
+    const pivot = candles[index];
+    if (!pivot) {
+      continue;
+    }
+    let isSwing = true;
+    for (let side = index - lookback; side <= index + lookback; side += 1) {
+      if (side === index) {
+        continue;
+      }
+      if ((candles[side]?.high ?? -Infinity) > pivot.high) {
+        isSwing = false;
+        break;
+      }
+    }
+    if (isSwing) {
+      return pivot.high;
+    }
+  }
+  return null;
+}
+
 export function hasBullishShakeout(candles: Candle[], lookback = 12): boolean {
   const latest = candles.at(-1);
   if (!latest) {

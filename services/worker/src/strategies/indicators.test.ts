@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Candle } from "@tradeplatformcodex/shared";
-import { adx, atr, bollinger, ema, isFlashWick, isInSqueeze, macd, obv, rsi } from "./indicators";
+import { adx, atr, bollinger, ema, findSwingHigh, findSwingLow, isFlashWick, isInSqueeze, macd, obv, rsi } from "./indicators";
 
 function candle(close: number, volume = 100): Candle {
   return {
@@ -111,6 +111,27 @@ describe("indicators", () => {
     expect(bands.mid).toBe(100);
     expect(bands.upper).toBe(100); // zero variance -> bands collapse to the mean
     expect(bands.lower).toBe(100);
+  });
+
+  it("finds the most recent confirmed swing low and high", () => {
+    // A clear V: prices fall to a trough at index 5, then rise. With lookback 3 the
+    // trough (low 95) is the confirmed swing low; an inverted V gives the high.
+    const v = [101, 99, 97, 96, 95.5, 95, 95.5, 96, 97, 99, 101, 103].map((close) => candle(close));
+    const swingLow = findSwingLow(v, 3);
+    expect(swingLow).not.toBeNull();
+    expect(swingLow).toBeCloseTo(95 - 1); // candle() low = close - 1
+
+    const peak = [99, 101, 103, 104, 104.5, 105, 104.5, 104, 103, 101, 99, 97].map((close) => candle(close));
+    const swingHigh = findSwingHigh(peak, 3);
+    expect(swingHigh).not.toBeNull();
+    expect(swingHigh).toBeCloseTo(105 + 1); // candle() high = close + 1
+  });
+
+  it("returns null when there is no confirmed swing", () => {
+    const monotonic = Array.from({ length: 8 }, (_, index) => candle(100 + index));
+    // Strictly rising: every bar's low is exceeded by later bars within lookback,
+    // so no swing low is confirmed near the (still-rising) right edge.
+    expect(findSwingLow(monotonic, 3)).toBeNull();
   });
 
   it("detects a squeeze in flat consolidation but not in a trend", () => {
