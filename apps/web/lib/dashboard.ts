@@ -112,6 +112,29 @@ function summarizeByRegime(closedTrades: TradeRow[]) {
     .sort((a, b) => b.pnl - a.pnl);
 }
 
+// Compare strategies (Scalp vs Swing) by grouping runs on their APP_NAME and
+// summarising each strategy's closed trades — winrate, P/L (% and money).
+async function summarizeByStrategy(closedFilter: object): Promise<
+  { strategy: string; trades: number; winrate: number; pnl: number; pnlAmount: number; profitFactor: number }[]
+> {
+  const runs = await prisma.botRun.findMany();
+  const runIdsByStrategy = new Map<string, string[]>();
+  for (const run of runs) {
+    const strategy = String((run.configSnapshot as Record<string, unknown> | null)?.APP_NAME ?? "Unknown");
+    runIdsByStrategy.set(strategy, [...(runIdsByStrategy.get(strategy) ?? []), run.id]);
+  }
+
+  const stats = await Promise.all(
+    Array.from(runIdsByStrategy.entries()).map(async ([strategy, runIds]) => {
+      const trades = (await prisma.trade.findMany({ where: { runId: { in: runIds }, ...closedFilter } })) as TradeRow[];
+      const perf = summarizeClosedTrades(trades);
+      const pnlAmount = trades.reduce((sum, trade) => sum + Number(trade.pnlAmount ?? 0), 0);
+      return { strategy, trades: trades.length, winrate: perf.winrate, pnl: perf.pnl, pnlAmount, profitFactor: perf.profitFactor };
+    })
+  );
+  return stats.filter((stat) => stat.trades > 0).sort((a, b) => b.trades - a.trades);
+}
+
 async function summarizeRun(
   run: { id: string; name: string; configHash: string; status: string; startedAt: Date; lastSeenAt: Date; stoppedAt: Date | null; configSnapshot: unknown },
   from?: Date
@@ -202,6 +225,7 @@ export async function getDashboardData(options: { from?: Date } = {}) {
   ]);
 
   const skipReasonGroups = await summarizeSkipReasons(from);
+  const strategyComparison = await summarizeByStrategy(closedFilter);
 
   // Money view: balance = starting balance + realized P/L (compounding). Realized
   // P/L sums pnlAmount over every closed trade in scope, not just the 50 shown.
@@ -238,6 +262,7 @@ export async function getDashboardData(options: { from?: Date } = {}) {
     closedTrades,
     skippedSignals,
     skipReasonGroups,
+    strategyComparison,
     startBalance,
     realizedPnlAmount,
     balance,

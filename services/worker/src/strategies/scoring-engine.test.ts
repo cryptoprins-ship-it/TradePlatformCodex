@@ -72,6 +72,28 @@ describe("generateSignals", () => {
     expect((short5m?.score ?? 0)).toBeGreaterThan(long5m?.score ?? 0);
   });
 
+  it("enters on the configured timeframes (swing vs scalp)", () => {
+    const swing = loadConfig({
+      ENABLE_LIVE_TRADING: "false",
+      SYMBOLS: "BTCUSDT",
+      ENTRY_TIMEFRAMES: "1h,4h",
+      EMA_FAST: "50",
+      EMA_SLOW: "200"
+    });
+    const candlesByTimeframe = {
+      "5m": candlesFor("5m"),
+      "15m": candlesFor("15m"),
+      "1h": candlesFor("1h"),
+      "4h": candlesFor("4h")
+    };
+
+    const signals = generateSignals(swing, "BTCUSDT", candlesByTimeframe);
+    const timeframes = new Set(signals.map((signal) => signal.timeframe));
+
+    expect(timeframes).toEqual(new Set(["1h", "4h"]));
+    expect(signals.every((signal) => signal.reason.includes("EMA50/200"))).toBe(true);
+  });
+
   it("generates signals for configured alt symbols", () => {
     const config = loadConfig({
       ENABLE_LIVE_TRADING: "false",

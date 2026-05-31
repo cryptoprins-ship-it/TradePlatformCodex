@@ -21,7 +21,8 @@ services:
       - default
       - traefik
 
-  worker:
+  # Scalp strategy: fast EMA pair, short entry timeframes, stricter ADX gate.
+  worker-scalp:
     build: .
     restart: unless-stopped
     command: ["npm", "run", "start", "--workspace", "@tradeplatformcodex/worker"]
@@ -30,6 +31,32 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-tradingplatformcodex}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-tradingplatformcodex}
       REDIS_URL: redis://redis:6379
+      APP_NAME: Scalp
+      TIMEFRAMES: 5m,15m,1h,4h
+      ENTRY_TIMEFRAMES: 5m,15m
+      EMA_FAST: "8"
+      EMA_SLOW: "50"
+      ADX_TREND_THRESHOLD: "30"
+    depends_on:
+      - db
+      - redis
+
+  # Swing strategy: slow macro EMA pair, higher entry timeframes, looser ADX gate.
+  worker-swing:
+    build: .
+    restart: unless-stopped
+    command: ["npm", "run", "start", "--workspace", "@tradeplatformcodex/worker"]
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tradingplatformcodex}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-tradingplatformcodex}
+      REDIS_URL: redis://redis:6379
+      APP_NAME: Swing
+      TIMEFRAMES: 1h,4h
+      ENTRY_TIMEFRAMES: 1h,4h
+      EMA_FAST: "50"
+      EMA_SLOW: "200"
+      ADX_TREND_THRESHOLD: "20"
     depends_on:
       - db
       - redis

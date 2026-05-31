@@ -40,10 +40,18 @@ const envSchema = z.object({
     .string()
     .default("5m,15m,1h,4h")
     .transform((value) => value.split(",").map((timeframe) => timeframe.trim()).filter(Boolean)),
+  // The timeframes the strategy actually enters on (subset of TIMEFRAMES, which
+  // are all fetched). Scalp enters on 5m/15m, swing on 1h/4h.
+  ENTRY_TIMEFRAMES: z
+    .string()
+    .default("5m,15m")
+    .transform((value) => value.split(",").map((timeframe) => timeframe.trim()).filter(Boolean)),
   START_BALANCE: numberString(1000),
   MAX_RISK_PER_TRADE: numberString(1),
   MAX_DAILY_LOSS: numberString(3),
-  MAX_OPEN_TRADES: numberString(1),
+  MAX_OPEN_TRADES: numberString(5),
+  // Open trades allowed per symbol, so one coin can't hog the book.
+  MAX_OPEN_TRADES_PER_SYMBOL: numberString(2),
   MIN_CONFIDENCE_SCORE: numberString(75),
   MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP: numberString(74),
   MAX_TRADES_PER_DAY: numberString(3),
@@ -58,6 +66,11 @@ const envSchema = z.object({
   TRAIL_WEAK_ATR_MULT: numberString(1.8),
   TRAIL_CHOP_ATR_MULT: numberString(1),
   TRAIL_STRONG_CONFIDENCE: numberString(0.6),
+  // Trend filter EMA pair. Scalp rides a fast pair (8/50), swing a slow macro
+  // pair (50/200): aligned when fast/slow stack the trade's way and price is on
+  // the right side of the slow EMA.
+  EMA_FAST: numberString(8),
+  EMA_SLOW: numberString(50),
   // ADX trend-strength gate: below the threshold price is chopping and
   // trend-following entries whipsaw, so the setup is penalised. Strong ADX with
   // matching directional indicators passes clean.

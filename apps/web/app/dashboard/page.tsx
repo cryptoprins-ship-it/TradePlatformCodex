@@ -71,6 +71,41 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
       </section>
 
       <section className="panel" style={{ marginTop: 18 }}>
+        <h2>Strategy comparison — Scalp vs Swing</h2>
+        <p className="muted">Winrate and P/L per strategy. Same engine, different parameters.</p>
+        <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Strategy</th>
+              <th>Closed trades</th>
+              <th>Winrate</th>
+              <th>P/L %</th>
+              <th>P/L (€)</th>
+              <th>Profit factor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.strategyComparison.length === 0 ? (
+              <tr><td colSpan={6} className="muted">No closed trades yet for either strategy.</td></tr>
+            ) : (
+              data.strategyComparison.map((row) => (
+                <tr key={row.strategy}>
+                  <td data-label="Strategy"><span className="cell-label">Strategy</span>{row.strategy}</td>
+                  <td data-label="Closed trades"><span className="cell-label">Closed trades</span>{row.trades}</td>
+                  <td data-label="Winrate"><span className="cell-label">Winrate</span>{row.winrate.toFixed(1)}%</td>
+                  <td data-label="P/L %"><span className="cell-label">P/L %</span>{row.pnl.toFixed(2)}%</td>
+                  <td data-label="P/L (€)"><span className="cell-label">P/L (€)</span>€{row.pnlAmount.toFixed(2)}</td>
+                  <td data-label="Profit factor"><span className="cell-label">Profit factor</span>{row.profitFactor.toFixed(2)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section className="panel" style={{ marginTop: 18 }}>
         <h2>Why signals are skipped</h2>
         <p className="muted">Grouped reasons across skipped signals. Risk caps usually dominate, not low score.</p>
         <div className="table-wrap">

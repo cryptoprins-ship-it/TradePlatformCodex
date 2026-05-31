@@ -17,15 +17,21 @@ function latestClose(candles: Candle[]): number {
   return candles.at(-1)?.close ?? 0;
 }
 
-function trendScore(candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore {
+// Trend filter on a configurable fast/slow EMA pair. Scalp uses a fast pair
+// (8/50), swing a slow macro pair (50/200). Aligned when the EMAs stack the
+// trade's way and price sits on the right side of the slow EMA.
+function trendScore(config: AppConfig, candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore {
   const closes = candles.map((candle) => candle.close);
-  const ema200 = ema(closes, 200).at(-1) ?? closes.at(-1) ?? 0;
+  const fast = ema(closes, config.EMA_FAST).at(-1) ?? closes.at(-1) ?? 0;
+  const slow = ema(closes, config.EMA_SLOW).at(-1) ?? closes.at(-1) ?? 0;
   const price = latestClose(candles);
-  const aligned = direction === "LONG" ? price > ema200 : price < ema200;
+  const aligned = direction === "LONG" ? fast > slow && price > slow : fast < slow && price < slow;
   return {
-    module: "EMA200 trendfilter",
+    module: "EMA trendfilter",
     score: aligned ? 20 : 5,
-    reason: aligned ? `price ${direction === "LONG" ? "above" : "below"} EMA200` : "EMA200 context not aligned"
+    reason: aligned
+      ? `EMA${config.EMA_FAST}/${config.EMA_SLOW} stacked ${direction.toLowerCase()}`
+      : `EMA${config.EMA_FAST}/${config.EMA_SLOW} not aligned for ${direction.toLowerCase()}`
   };
 }
 
@@ -135,7 +141,7 @@ function buildSignal(
   config: AppConfig,
   symbol: SupportedSymbol,
   candlesByTimeframe: CandleMap,
-  timeframe: "5m" | "15m",
+  timeframe: Timeframe,
   direction: "LONG" | "SHORT"
 ): TradingSignal {
   const candles = candlesByTimeframe[timeframe];
@@ -151,7 +157,7 @@ function buildSignal(
   });
   const wick = wickScore(candles, direction);
   const preliminaryScores = [
-    trendScore(candles, direction),
+    trendScore(config, candles, direction),
     adxScore(config, candles, direction),
     macdScore(candles, direction),
     volumeScore(config, candles, direction),
@@ -180,9 +186,11 @@ function buildSignal(
 }
 
 export function generateSignals(config: AppConfig, symbol: SupportedSymbol, candlesByTimeframe: CandleMap): TradingSignal[] {
-  const entryTimeframes = ["5m", "15m"] as const;
-  return entryTimeframes.flatMap((timeframe) => [
-    buildSignal(config, symbol, candlesByTimeframe, timeframe, "LONG"),
-    buildSignal(config, symbol, candlesByTimeframe, timeframe, "SHORT")
-  ]);
+  const entryTimeframes = config.ENTRY_TIMEFRAMES as Timeframe[];
+  return entryTimeframes
+    .filter((timeframe) => candlesByTimeframe[timeframe]?.length)
+    .flatMap((timeframe) => [
+      buildSignal(config, symbol, candlesByTimeframe, timeframe, "LONG"),
+      buildSignal(config, symbol, candlesByTimeframe, timeframe, "SHORT")
+    ]);
 }

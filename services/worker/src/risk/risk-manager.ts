@@ -33,6 +33,13 @@ export async function evaluateRisk(config: AppConfig, signal: PaperTradeInput): 
     reasons.push(`max open trades reached (${config.MAX_OPEN_TRADES})`);
   }
 
+  const openForSymbol = await prisma.trade.count({
+    where: { ...runFilter, symbol: signal.symbol, status: { in: ["OPEN", "TP1_HIT"] } }
+  });
+  if (openForSymbol >= config.MAX_OPEN_TRADES_PER_SYMBOL) {
+    reasons.push(`max open trades per symbol reached (${config.MAX_OPEN_TRADES_PER_SYMBOL})`);
+  }
+
   const todaysTrades = await prisma.trade.count({
     where: { ...runFilter, openedAt: { gte: startOfDay } }
   });
