@@ -21,8 +21,10 @@ services:
       - default
       - traefik
 
-  # Scalp strategy: fast EMA pair, short entry timeframes, stricter ADX gate.
-  worker-scalp:
+  # Intraday momentum: 1h entries, fast EMA pair. Faster-reacting than swing but
+  # robot-safe — true sub-hour scalping fights latency, noise, and fees and isn't
+  # viable for a paper bot, so the second strategy lives on 1h, not 5m/15m.
+  worker-intraday:
     build: .
     restart: unless-stopped
     command: ["npm", "run", "start", "--workspace", "@tradeplatformcodex/worker"]
@@ -31,24 +33,19 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-tradingplatformcodex}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-tradingplatformcodex}
       REDIS_URL: redis://redis:6379
-      APP_NAME: Scalp
-      TIMEFRAMES: 5m,15m,1h,4h
-      ENTRY_TIMEFRAMES: 5m,15m
-      CONTEXT_TIMEFRAMES: 1h,4h
+      APP_NAME: Intraday
+      TIMEFRAMES: 1h,4h,1d
+      ENTRY_TIMEFRAMES: 1h
+      CONTEXT_TIMEFRAMES: 4h,1d
       EMA_FAST: "8"
       EMA_SLOW: "50"
-      ADX_TREND_THRESHOLD: "30"
-      # Regime read fast, with looser cutoffs so quick bars aren't all VOLATILE.
-      MARKOV_CONTEXT_TIMEFRAMES: 15m,1h
-      MARKOV_VOLATILE_THRESHOLD: "0.012"
-      MARKOV_SIDEWAYS_THRESHOLD: "0.0009"
-      # Scalp shouldn't chase: tighter overextension cutoff.
-      EXTENSION_ATR_MULT: "2"
-      # Intraday VWAP confluence is a scalp-only edge.
-      VWAP_ENABLED: "true"
-      # Check exits every 15s (5m stops shouldn't wait a full minute) while signals
-      # still regenerate every WORKER_INTERVAL_SECONDS.
-      MONITOR_INTERVAL_SECONDS: "15"
+      ADX_TREND_THRESHOLD: "25"
+      # Regime read on the higher timeframes. VWAP off (1h spans sessions).
+      MARKOV_CONTEXT_TIMEFRAMES: 4h,1d
+      MARKOV_VOLATILE_THRESHOLD: "0.006"
+      MARKOV_SIDEWAYS_THRESHOLD: "0.0004"
+      EXTENSION_ATR_MULT: "2.5"
+      VWAP_ENABLED: "false"
     depends_on:
       - db
       - redis
