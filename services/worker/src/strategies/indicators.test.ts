@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Candle } from "@tradeplatformcodex/shared";
-import { adx, atr, bollinger, ema, findSwingHigh, findSwingLow, isFlashWick, isInSqueeze, macd, obv, recentEmaCross, rsi } from "./indicators";
+import { adx, anchoredVwap, atr, bollinger, ema, findSwingHigh, findSwingLow, isFlashWick, isInSqueeze, macd, obv, recentEmaCross, rsi } from "./indicators";
 
 function candle(close: number, volume = 100): Candle {
   return {
@@ -113,6 +113,17 @@ describe("indicators", () => {
     // A long, steady uptrend with no recent cross returns null.
     const steady = Array.from({ length: 60 }, (_, index) => 100 + index);
     expect(recentEmaCross(steady, 8, 50, 3)).toBeNull();
+  });
+
+  it("computes anchored VWAP from the latest UTC day, excluding earlier days", () => {
+    // candle() typical price = (close+1 + close-1 + close)/3 = close, so VWAP is a
+    // plain volume-weighted mean of closes: (100*10 + 110*30) / 40 = 107.5.
+    const today = [candle(100, 10), candle(110, 30)];
+    expect(anchoredVwap(today)).toBeCloseTo(107.5);
+
+    // A high-volume bar from the previous UTC day must not drag the anchor.
+    const withYesterday: Candle[] = [{ ...candle(50, 1000), openTime: new Date(Date.UTC(1969, 11, 31)) }, ...today];
+    expect(anchoredVwap(withYesterday)).toBeCloseTo(107.5);
   });
 
   it("computes Bollinger bands around the mean", () => {

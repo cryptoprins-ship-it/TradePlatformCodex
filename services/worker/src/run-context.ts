@@ -48,6 +48,8 @@ function buildRunSnapshot(config: AppConfig): Record<string, unknown> {
     SQUEEZE_ENABLED: config.SQUEEZE_ENABLED,
     SQUEEZE_BB_K: config.SQUEEZE_BB_K,
     SQUEEZE_BONUS: config.SQUEEZE_BONUS,
+    VWAP_ENABLED: config.VWAP_ENABLED,
+    VWAP_BONUS: config.VWAP_BONUS,
     FLASH_WICK_ATR_MULT: config.FLASH_WICK_ATR_MULT,
     FLASH_WICK_BODY_RATIO: config.FLASH_WICK_BODY_RATIO,
     FLASH_WICK_PENALTY: config.FLASH_WICK_PENALTY,

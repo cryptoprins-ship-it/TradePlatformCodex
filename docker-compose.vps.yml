@@ -44,6 +44,8 @@ services:
       MARKOV_SIDEWAYS_THRESHOLD: "0.0009"
       # Scalp shouldn't chase: tighter overextension cutoff.
       EXTENSION_ATR_MULT: "2"
+      # Intraday VWAP confluence is a scalp-only edge.
+      VWAP_ENABLED: "true"
     depends_on:
       - db
       - redis

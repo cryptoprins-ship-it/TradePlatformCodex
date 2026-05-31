@@ -129,6 +129,10 @@ const envSchema = z.object({
   SQUEEZE_ENABLED: booleanString.default("true"),
   SQUEEZE_BB_K: numberString(2),
   SQUEEZE_BONUS: numberString(15),
+  // VWAP confluence (scalp only). Off by default; swing leaves it disabled since
+  // the session VWAP resets each UTC day and is meaningless across multi-day swings.
+  VWAP_ENABLED: booleanString.default("false"),
+  VWAP_BONUS: numberString(15),
   // Daily report: once per local day, each worker posts its strategy's previous-day
   // summary (trades, winrate, P/L %, P/L money, profit factor, avg R) to Telegram.
   DAILY_REPORT_ENABLED: booleanString.default("true"),

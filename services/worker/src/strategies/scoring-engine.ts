@@ -10,6 +10,7 @@ import {
 } from "@tradeplatformcodex/shared";
 import {
   adx,
+  anchoredVwap,
   atr,
   ema,
   findSwingHigh,
@@ -146,6 +147,35 @@ function timeframeScore(config: AppConfig, candlesByTimeframe: CandleMap, direct
     module: "Multi-timeframe context",
     score: Math.round(3 + (alignedCount / total) * 17),
     reason: `${alignedCount}/${context.length} context timeframes aligned`
+  };
+}
+
+// VWAP confluence (scalp): price relative to the session VWAP, confirmed by the
+// fast EMA. Both price and EMA8 on the trade's side of VWAP = the intraday value
+// area backs the move (full bonus); price alone = half. Off by default; swing
+// leaves it disabled since VWAP resets each session and means little across days.
+function vwapScore(config: AppConfig, candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore {
+  if (!config.VWAP_ENABLED) {
+    return { module: "VWAP confluence", score: 0, reason: "VWAP disabled" };
+  }
+  const vwap = anchoredVwap(candles);
+  if (vwap === null) {
+    return { module: "VWAP confluence", score: 0, reason: "no VWAP (no session volume)" };
+  }
+  const price = latestClose(candles);
+  const fast = ema(candles.map((candle) => candle.close), config.EMA_FAST).at(-1) ?? price;
+  const priceAligned = direction === "LONG" ? price > vwap : price < vwap;
+  const emaAligned = direction === "LONG" ? fast > vwap : fast < vwap;
+  const score = priceAligned && emaAligned ? config.VWAP_BONUS : priceAligned ? Math.round(config.VWAP_BONUS / 2) : 0;
+  return {
+    module: "VWAP confluence",
+    score,
+    reason:
+      priceAligned && emaAligned
+        ? `price + EMA${config.EMA_FAST} above/below VWAP with ${direction}`
+        : priceAligned
+          ? `price on ${direction} side of VWAP, EMA${config.EMA_FAST} not yet`
+          : `price on wrong side of VWAP for ${direction}`
   };
 }
 
@@ -300,6 +330,7 @@ function buildSignal(
     flashWickScore(config, candles),
     extensionScore(config, candles, direction),
     squeezeScore(config, candles, direction),
+    vwapScore(config, candles, direction),
     markovRegime.moduleScore
   ];
   const moduleScores = preliminaryScores;

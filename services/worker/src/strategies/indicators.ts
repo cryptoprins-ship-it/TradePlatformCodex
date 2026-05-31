@@ -179,6 +179,30 @@ export function recentEmaCross(
   return null;
 }
 
+// Anchored VWAP: volume-weighted average of the typical price ((H+L+C)/3) since
+// the start of the latest bar's UTC day. Crypto trades 24/7, so the UTC day is the
+// session anchor. Returns null when the window carries no volume. Intraday/scalp
+// reference for where the real traded value sits.
+export function anchoredVwap(candles: Candle[]): number | null {
+  const last = candles.at(-1);
+  if (!last) {
+    return null;
+  }
+  const day = last.openTime;
+  const anchor = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate());
+  let priceVolume = 0;
+  let volume = 0;
+  for (const candle of candles) {
+    if (candle.openTime.getTime() < anchor) {
+      continue;
+    }
+    const typical = (candle.high + candle.low + candle.close) / 3;
+    priceVolume += typical * candle.volume;
+    volume += candle.volume;
+  }
+  return volume <= 0 ? null : priceVolume / volume;
+}
+
 function standardDeviation(values: number[]): number {
   if (values.length === 0) {
     return 0;
