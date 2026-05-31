@@ -5,7 +5,8 @@ const INTERVAL_MAP: Record<Timeframe, string> = {
   "5m": "5m",
   "15m": "15m",
   "1h": "60m",
-  "4h": "4h"
+  "4h": "4h",
+  "1d": "1d"
 };
 
 type MEXCKline = [

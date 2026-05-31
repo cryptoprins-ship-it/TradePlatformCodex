@@ -46,6 +46,14 @@ const envSchema = z.object({
     .string()
     .default("5m,15m")
     .transform((value) => value.split(",").map((timeframe) => timeframe.trim()).filter(Boolean)),
+  // Higher-timeframe context the multi-timeframe module scores against (subset of
+  // TIMEFRAMES, all fetched). Scalp checks 1h/4h; swing adds the daily (1d) so a
+  // macro trend has to agree. MEXC spot klines have no native 12h, so the daily
+  // is the higher swing context.
+  CONTEXT_TIMEFRAMES: z
+    .string()
+    .default("1h,4h")
+    .transform((value) => value.split(",").map((timeframe) => timeframe.trim()).filter(Boolean)),
   START_BALANCE: numberString(1000),
   MAX_RISK_PER_TRADE: numberString(1),
   MAX_DAILY_LOSS: numberString(3),
@@ -81,6 +89,20 @@ const envSchema = z.object({
   // for rising/falling.
   OBV_SMA_LENGTH: numberString(55),
   OBV_MOMENTUM_LENGTH: numberString(3),
+  // Flash-wick breaker: block entries on the bar after an abnormal volatility
+  // spike (a candle whose range exceeds ATR_MULT * ATR while its body is a small
+  // fraction of that range — a liquidation wick). Such bars get wicked out, so
+  // the breaker applies a heavy penalty that drops the setup below threshold.
+  FLASH_WICK_ATR_MULT: numberString(3),
+  FLASH_WICK_BODY_RATIO: numberString(0.35),
+  FLASH_WICK_PENALTY: numberString(40),
+  // Golden-setup eviction: when the open-trade caps (total or per-symbol) are full
+  // and a setup scores at or above this, the weakest open trade in the binding
+  // pool is closed to free a slot — but only if the newcomer outscores it.
+  GOLDEN_SCORE: numberString(90),
+  // Daily report: once per local day, each worker posts its strategy's previous-day
+  // summary (trades, winrate, P/L %, P/L money, profit factor, avg R) to Telegram.
+  DAILY_REPORT_ENABLED: booleanString.default("true"),
   MARKOV_REGIME_ENABLED: booleanString.default("true"),
   MARKOV_REGIME_PENALTY: numberString(25),
   MARKOV_REGIME_VOLATILE_PENALTY: numberString(35),

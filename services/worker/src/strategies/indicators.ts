@@ -97,6 +97,44 @@ export function adx(candles: Candle[], period = 14): { adx: number; plusDI: numb
   };
 }
 
+// Average True Range (Wilder): the smoothed true-range, a direction-agnostic
+// volatility yardstick. Used to judge whether a single bar's range is abnormal.
+export function atr(candles: Candle[], period = 14): number {
+  if (candles.length < 2) {
+    return 0;
+  }
+  const trueRange: number[] = [];
+  for (let index = 1; index < candles.length; index += 1) {
+    const current = candles[index];
+    const previous = candles[index - 1];
+    if (!current || !previous) {
+      continue;
+    }
+    trueRange.push(
+      Math.max(current.high - current.low, Math.abs(current.high - previous.close), Math.abs(current.low - previous.close))
+    );
+  }
+  return rma(trueRange, period).at(-1) ?? 0;
+}
+
+// Flash-wick / liquidation-spike detector: the latest bar's range dwarfs recent
+// volatility (range > atrMult * ATR) while its body is a small fraction of that
+// range (body < bodyMaxRatio * range). ATR is measured on the prior bars so the
+// spike itself does not inflate the baseline it is compared against.
+export function isFlashWick(candles: Candle[], atrMult: number, bodyMaxRatio: number): boolean {
+  const latest = candles.at(-1);
+  if (!latest) {
+    return false;
+  }
+  const baseline = atr(candles.slice(0, -1));
+  if (baseline <= 0) {
+    return false;
+  }
+  const range = latest.high - latest.low;
+  const body = Math.abs(latest.close - latest.open);
+  return range > atrMult * baseline && body < range * bodyMaxRatio;
+}
+
 // On-Balance Volume: running sum that adds the bar's volume on up closes and
 // subtracts it on down closes. Direction-aware, unlike a raw volume magnitude
 // check — rising OBV means buying pressure is actually flowing with price.

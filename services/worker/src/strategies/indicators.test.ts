@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Candle } from "@tradeplatformcodex/shared";
-import { adx, ema, macd, obv, rsi } from "./indicators";
+import { adx, atr, ema, isFlashWick, macd, obv, rsi } from "./indicators";
 
 function candle(close: number, volume = 100): Candle {
   return {
@@ -66,5 +66,41 @@ describe("indicators", () => {
 
     expect(risingObv.at(-1)).toBeGreaterThan(risingObv[0] ?? 0);
     expect(fallingObv.at(-1)).toBeLessThan(fallingObv[0] ?? 0);
+  });
+
+  it("measures ATR as positive and larger for wider ranges", () => {
+    const tight = Array.from({ length: 30 }, (_, index) => candle(100 + index));
+    const wide = Array.from({ length: 30 }, (_, index) => ({
+      ...candle(100 + index),
+      high: 100 + index + 5,
+      low: 100 + index - 5
+    }));
+
+    expect(atr(tight)).toBeGreaterThan(0);
+    expect(atr(wide)).toBeGreaterThan(atr(tight));
+  });
+
+  it("flags a flash wick: a huge-range, small-body bar after calm volatility", () => {
+    const calm = Array.from({ length: 30 }, (_, index) => candle(100 + index));
+    const spike: Candle = {
+      ...candle(130),
+      // Range of 40 dwarfs the ~2-wide baseline; the body (open~close) is tiny.
+      open: 130,
+      close: 130.5,
+      high: 150,
+      low: 110
+    };
+
+    expect(isFlashWick([...calm, spike], 3, 0.35)).toBe(true);
+    // A normal bar of the same series is not a flash wick.
+    expect(isFlashWick(calm, 3, 0.35)).toBe(false);
+  });
+
+  it("does not flag a wide bar with a full body as a flash wick", () => {
+    const calm = Array.from({ length: 30 }, (_, index) => candle(100 + index));
+    const trend: Candle = { ...candle(130), open: 110, close: 150, high: 151, low: 109 };
+
+    // Range is large but the body fills it (a real move, not a wick) -> not blocked.
+    expect(isFlashWick([...calm, trend], 3, 0.35)).toBe(false);
   });
 });

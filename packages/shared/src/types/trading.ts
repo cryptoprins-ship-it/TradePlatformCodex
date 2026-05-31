@@ -1,4 +1,4 @@
-export type Timeframe = "5m" | "15m" | "1h" | "4h";
+export type Timeframe = "5m" | "15m" | "1h" | "4h" | "1d";
 export type Direction = "LONG" | "SHORT";
 export type SignalStatus = "DETECTED" | "TRADE_OPENED" | "SKIPPED";
 export type TradeStatus = "OPEN" | "TP1_HIT" | "TP2_HIT" | "STOP_LOSS_HIT" | "CLOSED" | "CANCELLED" | "SKIPPED";

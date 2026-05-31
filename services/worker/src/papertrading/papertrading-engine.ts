@@ -15,9 +15,121 @@ async function currentBalance(config: AppConfig, runId: string | null): Promise<
   return config.START_BALANCE + Number(realized._sum.pnlAmount ?? 0);
 }
 
-export async function openPaperTrade(config: AppConfig, signal: PaperTradeInput): Promise<string | null> {
+export interface OpenPaperTradeOptions {
+  // Resolves the current market price for a symbol, used to realize an evicted
+  // trade at market. Absent (e.g. in tests) the evicted trade closes at its entry.
+  resolvePrice?: (symbol: SupportedSymbol) => Promise<number>;
+}
+
+const CAPACITY_REASON_PREFIX = "max open trades";
+
+export interface EvictionCandidate {
+  id: string;
+  symbol: string;
+  confidenceScore: number;
+  openedAt: Date;
+}
+
+// Pure decision for golden-setup eviction: given the incoming score, the risk
+// reasons that blocked it, and the currently open trades, return the trade to
+// evict or null. Evicts ONLY when the block is purely a capacity cap and the
+// newcomer scores >= GOLDEN_SCORE and strictly outscores the weakest trade in
+// the binding pool (per-symbol cap -> that symbol; total cap -> all). Discipline
+// limits (score, kill switch, daily loss, trades/day) never evict.
+export function selectEvictionTarget<T extends EvictionCandidate>(
+  signalScore: number,
+  goldenScore: number,
+  reasons: string[],
+  symbol: string,
+  openTrades: T[]
+): T | null {
+  if (signalScore < goldenScore) {
+    return null;
+  }
+  if (reasons.length === 0 || !reasons.every((reason) => reason.startsWith(CAPACITY_REASON_PREFIX))) {
+    return null;
+  }
+  // A full per-symbol cap is the binding constraint for this symbol's new trade,
+  // so evict within the symbol; otherwise the total cap is full, evict globally.
+  const perSymbolBound = reasons.some((reason) => reason.includes("per symbol"));
+  const pool = perSymbolBound ? openTrades.filter((trade) => trade.symbol === symbol) : openTrades;
+  const weakest = [...pool].sort(
+    (a, b) => a.confidenceScore - b.confidenceScore || a.openedAt.getTime() - b.openedAt.getTime()
+  )[0];
+  if (!weakest || signalScore <= weakest.confidenceScore) {
+    return null;
+  }
+  return weakest;
+}
+
+// Closes the weakest open trade to free a slot for a golden setup. Returns true
+// when a slot was freed. The evicted trade is realized at the current market price
+// when a resolver is supplied, otherwise at its entry (a breakeven scratch).
+async function tryGoldenEviction(
+  config: AppConfig,
+  signal: PaperTradeInput,
+  reasons: string[],
+  resolvePrice?: (symbol: SupportedSymbol) => Promise<number>
+): Promise<boolean> {
+  if (signal.score < config.GOLDEN_SCORE) {
+    return false;
+  }
   const runId = getActiveRunId();
-  const risk = await evaluateRisk(config, signal);
+  const runFilter = runId ? { runId } : {};
+  const openTrades = await prisma.trade.findMany({
+    where: { ...runFilter, status: { in: ["OPEN", "TP1_HIT"] } }
+  });
+  const weakest = selectEvictionTarget(signal.score, config.GOLDEN_SCORE, reasons, signal.symbol, openTrades);
+  if (!weakest) {
+    return false;
+  }
+
+  const entry = Number(weakest.entryPrice);
+  const isLong = weakest.direction === "LONG";
+  const exitPrice = resolvePrice ? await resolvePrice(weakest.symbol as SupportedSymbol) : entry;
+  const pnlPercentage = entry === 0 ? 0 : ((exitPrice - entry) / entry) * 100 * (isLong ? 1 : -1);
+  const pnlAmount = computePnlAmount(Number(weakest.positionNotional ?? 0), pnlPercentage);
+
+  await prisma.trade.update({
+    where: { id: weakest.id },
+    data: {
+      status: "CLOSED",
+      exitPrice,
+      pnlPercentage,
+      pnlAmount,
+      result: pnlPercentage >= 0 ? "WIN" : "LOSS",
+      closedAt: new Date(),
+      events: {
+        create: {
+          eventType: "EVICTED",
+          message: `Closed to free a slot for a golden setup (incoming score ${signal.score} > ${weakest.confidenceScore}); filled ${exitPrice}`,
+          price: exitPrice
+        }
+      }
+    }
+  });
+  await logBot("info", "Papertrade evicted for golden setup", {
+    evictedTradeId: weakest.id,
+    evictedSymbol: weakest.symbol,
+    evictedScore: weakest.confidenceScore,
+    incomingSymbol: signal.symbol,
+    incomingScore: signal.score,
+    pnlPercentage
+  });
+  return true;
+}
+
+export async function openPaperTrade(
+  config: AppConfig,
+  signal: PaperTradeInput,
+  options: OpenPaperTradeOptions = {}
+): Promise<string | null> {
+  const runId = getActiveRunId();
+  let risk = await evaluateRisk(config, signal);
+  if (!risk.allowed && (await tryGoldenEviction(config, signal, risk.reasons, options.resolvePrice))) {
+    // A slot was freed — re-run the full risk gate before opening.
+    risk = await evaluateRisk(config, signal);
+  }
   if (!risk.allowed) {
     await prisma.signal.update({
       where: { id: signal.signalId },

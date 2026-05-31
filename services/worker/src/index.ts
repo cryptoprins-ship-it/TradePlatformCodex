@@ -6,6 +6,7 @@ import { openPaperTrade, monitorOpenPaperTrades } from "./papertrading/papertrad
 import { prisma } from "./db";
 import { logBot } from "./logging/bot-log";
 import { ensureActiveRun, getActiveRunId, touchActiveRun } from "./run-context";
+import { maybeSendDailyReport } from "./reporting/daily-report";
 import { generateSignals } from "./strategies/scoring-engine";
 
 const config = loadConfig();
@@ -65,7 +66,7 @@ export async function runWorkerCycle(): Promise<void> {
       for (const signal of signals) {
         const signalId = await persistSignal(signal);
         await sendTelegram(config, formatSignalAlert(signal));
-        await openPaperTrade(config, { ...signal, signalId });
+        await openPaperTrade(config, { ...signal, signalId }, { resolvePrice: (target) => client.getTickerPrice(target) });
       }
     } catch (error: unknown) {
       await logBot("error", "Worker symbol cycle failed", {
@@ -74,6 +75,8 @@ export async function runWorkerCycle(): Promise<void> {
       });
     }
   }
+
+  await maybeSendDailyReport(config);
 
   await logBot("info", "Worker cycle completed", {
     symbols,

@@ -34,6 +34,7 @@ services:
       APP_NAME: Scalp
       TIMEFRAMES: 5m,15m,1h,4h
       ENTRY_TIMEFRAMES: 5m,15m
+      CONTEXT_TIMEFRAMES: 1h,4h
       EMA_FAST: "8"
       EMA_SLOW: "50"
       ADX_TREND_THRESHOLD: "30"
@@ -52,8 +53,9 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-tradingplatformcodex}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-tradingplatformcodex}
       REDIS_URL: redis://redis:6379
       APP_NAME: Swing
-      TIMEFRAMES: 1h,4h
+      TIMEFRAMES: 1h,4h,1d
       ENTRY_TIMEFRAMES: 1h,4h
+      CONTEXT_TIMEFRAMES: 1h,4h,1d
       EMA_FAST: "50"
       EMA_SLOW: "200"
       ADX_TREND_THRESHOLD: "20"

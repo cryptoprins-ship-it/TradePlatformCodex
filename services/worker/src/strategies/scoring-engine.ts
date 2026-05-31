@@ -8,7 +8,7 @@ import {
   type Timeframe,
   type TradingSignal
 } from "@tradeplatformcodex/shared";
-import { adx, ema, hasBearishShakeout, hasBullishShakeout, macd, obv } from "./indicators";
+import { adx, ema, hasBearishShakeout, hasBullishShakeout, isFlashWick, macd, obv } from "./indicators";
 import { assessMarkovRegime, type MarketRegime } from "./markov-regime";
 
 type CandleMap = Record<Timeframe, Candle[]>;
@@ -107,8 +107,14 @@ function wickScore(candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore 
   };
 }
 
-function timeframeScore(candlesByTimeframe: CandleMap, direction: "LONG" | "SHORT"): ModuleScore {
-  const context = ["1h", "4h"] as const;
+// Higher-timeframe trend agreement on the configured context timeframes. Scalp
+// checks 1h/4h; swing adds 1d so a macro trend must agree. Score scales with the
+// aligned fraction (none -> 3, all -> 20) so adding the daily does not distort it.
+function timeframeScore(config: AppConfig, candlesByTimeframe: CandleMap, direction: "LONG" | "SHORT"): ModuleScore {
+  const context = (config.CONTEXT_TIMEFRAMES as Timeframe[]).filter(
+    (timeframe) => candlesByTimeframe[timeframe]?.length
+  );
+  const total = context.length || 1;
   const alignedCount = context.filter((timeframe) => {
     const candles = candlesByTimeframe[timeframe];
     const closes = candles.map((candle) => candle.close);
@@ -118,8 +124,22 @@ function timeframeScore(candlesByTimeframe: CandleMap, direction: "LONG" | "SHOR
   }).length;
   return {
     module: "Multi-timeframe context",
-    score: alignedCount === 2 ? 20 : alignedCount === 1 ? 11 : 3,
-    reason: `${alignedCount}/2 context timeframes aligned`
+    score: Math.round(3 + (alignedCount / total) * 17),
+    reason: `${alignedCount}/${context.length} context timeframes aligned`
+  };
+}
+
+// Flash-wick breaker: a hard volatility filter. When the entry candle is an
+// abnormal liquidation wick the setup is heavily penalised so its score drops
+// below the confidence threshold and no trade opens.
+function flashWickScore(config: AppConfig, candles: Candle[]): ModuleScore {
+  const flash = isFlashWick(candles, config.FLASH_WICK_ATR_MULT, config.FLASH_WICK_BODY_RATIO);
+  return {
+    module: "Flash-wick breaker",
+    score: flash ? -config.FLASH_WICK_PENALTY : 0,
+    reason: flash
+      ? `flash wick: bar range > ${config.FLASH_WICK_ATR_MULT}x ATR with small body; entry blocked`
+      : "no flash-wick volatility"
   };
 }
 
@@ -162,7 +182,8 @@ function buildSignal(
     macdScore(candles, direction),
     volumeScore(config, candles, direction),
     wick,
-    timeframeScore(candlesByTimeframe, direction),
+    timeframeScore(config, candlesByTimeframe, direction),
+    flashWickScore(config, candles),
     markovRegime.moduleScore
   ];
   const moduleScores = preliminaryScores;
