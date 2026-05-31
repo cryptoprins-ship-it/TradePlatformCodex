@@ -8,7 +8,7 @@ import {
   type Timeframe,
   type TradingSignal
 } from "@tradeplatformcodex/shared";
-import { adx, ema, hasBearishShakeout, hasBullishShakeout, isFlashWick, macd, obv } from "./indicators";
+import { adx, atr, ema, hasBearishShakeout, hasBullishShakeout, isFlashWick, isInSqueeze, macd, obv } from "./indicators";
 import { assessMarkovRegime, type MarketRegime } from "./markov-regime";
 
 type CandleMap = Record<Timeframe, Candle[]>;
@@ -80,7 +80,7 @@ function adxScore(config: AppConfig, candles: Candle[], direction: "LONG" | "SHO
   if (strong && diAligned) {
     return {
       module: "ADX trend strength",
-      score: 0,
+      score: config.ADX_TREND_BONUS,
       reason: `ADX ${round(adxValue, 1)} confirms a strong ${direction} trend`
     };
   }
@@ -143,6 +143,52 @@ function flashWickScore(config: AppConfig, candles: Candle[]): ModuleScore {
   };
 }
 
+// Extension gate: distance of price from the Keltner mean in ATR units. An entry
+// already stretched EXTENSION_ATR_MULT * ATR in the trade direction is chasing an
+// extended move (buying the top / selling the bottom) and gets penalised.
+function extensionScore(config: AppConfig, candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore {
+  const closes = candles.map((candle) => candle.close);
+  const mean = ema(closes, config.KELTNER_PERIOD).at(-1) ?? latestClose(candles);
+  const range = atr(candles, config.KELTNER_PERIOD);
+  if (range <= 0) {
+    return { module: "Extension gate", score: 0, reason: "no volatility reading for extension" };
+  }
+  const extension = (latestClose(candles) - mean) / range;
+  const stretched =
+    direction === "LONG" ? extension > config.EXTENSION_ATR_MULT : extension < -config.EXTENSION_ATR_MULT;
+  return {
+    module: "Extension gate",
+    score: stretched ? -config.EXTENSION_PENALTY : 0,
+    reason: stretched
+      ? `price ${round(Math.abs(extension), 1)}x ATR beyond mean; overextended ${direction.toLowerCase()}, fade risk`
+      : "entry not overextended"
+  };
+}
+
+// Squeeze breakout: reward a setup firing out of a volatility squeeze (Bollinger
+// compressed inside the Keltner Channel) when the prior bar was squeezed, the
+// latest has released, and price is on the trade's side of the mean.
+function squeezeScore(config: AppConfig, candles: Candle[], direction: "LONG" | "SHORT"): ModuleScore {
+  if (!config.SQUEEZE_ENABLED) {
+    return { module: "Squeeze breakout", score: 0, reason: "squeeze detector disabled" };
+  }
+  const inSqueeze = isInSqueeze(candles, config.KELTNER_PERIOD, config.SQUEEZE_BB_K, config.KELTNER_ATR_MULT);
+  const wasSqueezed = isInSqueeze(candles.slice(0, -1), config.KELTNER_PERIOD, config.SQUEEZE_BB_K, config.KELTNER_ATR_MULT);
+  const releasing = wasSqueezed && !inSqueeze;
+  const mean = ema(candles.map((candle) => candle.close), config.KELTNER_PERIOD).at(-1) ?? latestClose(candles);
+  const momentumAligned = direction === "LONG" ? latestClose(candles) > mean : latestClose(candles) < mean;
+  const fire = releasing && momentumAligned;
+  return {
+    module: "Squeeze breakout",
+    score: fire ? config.SQUEEZE_BONUS : 0,
+    reason: fire
+      ? "firing out of a volatility squeeze"
+      : inSqueeze
+        ? "in squeeze (compression), no breakout yet"
+        : "no squeeze setup"
+  };
+}
+
 function clampScore(score: number): number {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
@@ -170,11 +216,19 @@ function buildSignal(
   const stopLoss = direction === "LONG" ? entryPrice - atrProxy : entryPrice + atrProxy;
   const takeProfit1 = direction === "LONG" ? entryPrice + atrProxy * 1.5 : entryPrice - atrProxy * 1.5;
   const takeProfit2 = direction === "LONG" ? entryPrice + atrProxy * 2.5 : entryPrice - atrProxy * 2.5;
-  const markovRegime = assessMarkovRegime(candlesByTimeframe["1h"], candlesByTimeframe["4h"], direction, {
-    enabled: config.MARKOV_REGIME_ENABLED,
-    penalty: config.MARKOV_REGIME_PENALTY,
-    volatilePenalty: config.MARKOV_REGIME_VOLATILE_PENALTY
-  });
+  const [regimeContext, regimeHigherContext] = config.MARKOV_CONTEXT_TIMEFRAMES as Timeframe[];
+  const markovRegime = assessMarkovRegime(
+    candlesByTimeframe[regimeContext] ?? candles,
+    candlesByTimeframe[regimeHigherContext ?? regimeContext] ?? candlesByTimeframe[regimeContext] ?? candles,
+    direction,
+    {
+      enabled: config.MARKOV_REGIME_ENABLED,
+      penalty: config.MARKOV_REGIME_PENALTY,
+      volatilePenalty: config.MARKOV_REGIME_VOLATILE_PENALTY,
+      volatileThreshold: config.MARKOV_VOLATILE_THRESHOLD,
+      sidewaysThreshold: config.MARKOV_SIDEWAYS_THRESHOLD
+    }
+  );
   const wick = wickScore(candles, direction);
   const preliminaryScores = [
     trendScore(config, candles, direction),
@@ -184,6 +238,8 @@ function buildSignal(
     wick,
     timeframeScore(config, candlesByTimeframe, direction),
     flashWickScore(config, candles),
+    extensionScore(config, candles, direction),
+    squeezeScore(config, candles, direction),
     markovRegime.moduleScore
   ];
   const moduleScores = preliminaryScores;

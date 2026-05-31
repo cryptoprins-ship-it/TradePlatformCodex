@@ -45,4 +45,16 @@ describe("assessMarkovRegime", () => {
     expect(assessment.penalty).toBe(35);
     expect(assessment.moduleScore.score).toBe(-35);
   });
+
+  it("stops flagging the same series as volatile when the cutoff is raised (scalp tuning)", () => {
+    const closes = Array.from({ length: 120 }, (_, index) => 100 + (index % 2 === 0 ? 4 : -4));
+    const assessment = assessMarkovRegime(candlesFromCloses(closes, "1h"), candlesFromCloses(closes, "4h"), "SHORT", {
+      ...options,
+      volatileThreshold: 0.1,
+      sidewaysThreshold: 0.00045
+    });
+
+    // A looser volatile cutoff means these fast bars no longer read as VOLATILE.
+    expect(assessment.regime).not.toBe("VOLATILE");
+  });
 });

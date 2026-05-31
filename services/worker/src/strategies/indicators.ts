@@ -153,6 +153,40 @@ export function obv(candles: Candle[]): number[] {
   return result;
 }
 
+function standardDeviation(values: number[]): number {
+  if (values.length === 0) {
+    return 0;
+  }
+  const mean = average(values);
+  return Math.sqrt(average(values.map((value) => (value - mean) ** 2)));
+}
+
+// Bollinger Bands: SMA midline +/- k standard deviations. The volatility envelope
+// that, compared against Keltner, reveals a squeeze.
+export function bollinger(values: number[], period = 20, k = 2): { mid: number; upper: number; lower: number } {
+  const slice = values.slice(-period);
+  const mid = average(slice);
+  const deviation = standardDeviation(slice);
+  return { mid, upper: mid + k * deviation, lower: mid - k * deviation };
+}
+
+// Squeeze (TTM-style): Bollinger Bands contained entirely inside the Keltner
+// Channel = volatility compression. A squeeze that releases on the next bar tends
+// to precede an expansion move, which the scoring engine rewards.
+export function isInSqueeze(candles: Candle[], period = 20, bbK = 2, kcMult = 1.5): boolean {
+  const closes = candles.map((candle) => candle.close);
+  if (closes.length < period) {
+    return false;
+  }
+  const bands = bollinger(closes, period, bbK);
+  const midKc = ema(closes, period).at(-1) ?? bands.mid;
+  const range = atr(candles, period);
+  if (range <= 0) {
+    return false;
+  }
+  return bands.upper < midKc + kcMult * range && bands.lower > midKc - kcMult * range;
+}
+
 export function hasBullishShakeout(candles: Candle[], lookback = 12): boolean {
   const latest = candles.at(-1);
   if (!latest) {

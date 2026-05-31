@@ -38,6 +38,12 @@ services:
       EMA_FAST: "8"
       EMA_SLOW: "50"
       ADX_TREND_THRESHOLD: "30"
+      # Regime read fast, with looser cutoffs so quick bars aren't all VOLATILE.
+      MARKOV_CONTEXT_TIMEFRAMES: 15m,1h
+      MARKOV_VOLATILE_THRESHOLD: "0.012"
+      MARKOV_SIDEWAYS_THRESHOLD: "0.0009"
+      # Scalp shouldn't chase: tighter overextension cutoff.
+      EXTENSION_ATR_MULT: "2"
     depends_on:
       - db
       - redis
@@ -59,6 +65,12 @@ services:
       EMA_FAST: "50"
       EMA_SLOW: "200"
       ADX_TREND_THRESHOLD: "20"
+      # Regime read slow off the higher timeframes, with tighter cutoffs.
+      MARKOV_CONTEXT_TIMEFRAMES: 4h,1d
+      MARKOV_VOLATILE_THRESHOLD: "0.006"
+      MARKOV_SIDEWAYS_THRESHOLD: "0.0004"
+      # Swing can ride further from the mean before it's "extended".
+      EXTENSION_ATR_MULT: "3"
     depends_on:
       - db
       - redis

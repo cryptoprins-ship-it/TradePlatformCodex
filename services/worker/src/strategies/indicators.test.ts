@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Candle } from "@tradeplatformcodex/shared";
-import { adx, atr, ema, isFlashWick, macd, obv, rsi } from "./indicators";
+import { adx, atr, bollinger, ema, isFlashWick, isInSqueeze, macd, obv, rsi } from "./indicators";
 
 function candle(close: number, volume = 100): Candle {
   return {
@@ -102,5 +102,25 @@ describe("indicators", () => {
 
     // Range is large but the body fills it (a real move, not a wick) -> not blocked.
     expect(isFlashWick([...calm, trend], 3, 0.35)).toBe(false);
+  });
+
+  it("computes Bollinger bands around the mean", () => {
+    const flat = Array.from({ length: 20 }, () => 100);
+    const bands = bollinger(flat, 20, 2);
+
+    expect(bands.mid).toBe(100);
+    expect(bands.upper).toBe(100); // zero variance -> bands collapse to the mean
+    expect(bands.lower).toBe(100);
+  });
+
+  it("detects a squeeze in flat consolidation but not in a trend", () => {
+    // Near-flat closes: tiny stdev -> Bollinger collapses well inside Keltner.
+    const calm = Array.from({ length: 40 }, (_, index) => candle(100 + (index % 2 === 0 ? 0.05 : -0.05)));
+    // Steady trend: stdev grows while ATR (bar-to-bar range) stays small, so
+    // Bollinger expands outside Keltner -> no squeeze.
+    const trend = Array.from({ length: 40 }, (_, index) => candle(100 + index * 2));
+
+    expect(isInSqueeze(calm, 20, 2, 1.5)).toBe(true);
+    expect(isInSqueeze(trend, 20, 2, 1.5)).toBe(false);
   });
 });

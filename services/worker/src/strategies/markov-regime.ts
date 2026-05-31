@@ -17,7 +17,14 @@ interface MarkovRegimeOptions {
   enabled: boolean;
   penalty: number;
   volatilePenalty: number;
+  // Classification cutoffs on the per-bar log-return scale. Optional so existing
+  // callers keep today's tuning; per-strategy callers scale them to their bars.
+  volatileThreshold?: number;
+  sidewaysThreshold?: number;
 }
+
+const DEFAULT_VOLATILE_THRESHOLD = 0.0075;
+const DEFAULT_SIDEWAYS_THRESHOLD = 0.00045;
 
 const REGIMES: MarketRegime[] = ["BULL", "BEAR", "SIDEWAYS", "VOLATILE"];
 
@@ -37,15 +44,15 @@ function standardDeviation(values: number[]): number {
   return Math.sqrt(variance);
 }
 
-function classifyWindow(returns: number[]): MarketRegime {
+function classifyWindow(returns: number[], volatileThreshold: number, sidewaysThreshold: number): MarketRegime {
   const meanReturn = average(returns);
   const volatility = standardDeviation(returns);
   const absoluteMean = Math.abs(meanReturn);
 
-  if (volatility > 0.0075 && absoluteMean < volatility * 0.45) {
+  if (volatility > volatileThreshold && absoluteMean < volatility * 0.45) {
     return "VOLATILE";
   }
-  if (absoluteMean < 0.00045) {
+  if (absoluteMean < sidewaysThreshold) {
     return "SIDEWAYS";
   }
   return meanReturn > 0 ? "BULL" : "BEAR";
@@ -73,11 +80,13 @@ function transitionProbability(states: MarketRegime[], current: MarketRegime): n
   return (transitions.get(current) ?? 0) / fromCurrent;
 }
 
-function confidenceFor(regime: MarketRegime, returns: number[], transition: number): number {
+function confidenceFor(regime: MarketRegime, returns: number[], transition: number, volatileThreshold: number): number {
   const meanReturn = average(returns);
   const volatility = standardDeviation(returns);
   const trendStrength = volatility === 0 ? 0 : Math.min(Math.abs(meanReturn) / volatility, 1);
-  const volatilityStrength = regime === "VOLATILE" ? Math.min(volatility / 0.012, 1) : trendStrength;
+  // Normalise volatile-regime strength against the (per-strategy) volatile cutoff
+  // so confidence scales with the same bar size the classifier uses.
+  const volatilityStrength = regime === "VOLATILE" ? Math.min(volatility / (volatileThreshold * 1.6), 1) : trendStrength;
   const raw = (regime === "SIDEWAYS" ? 0.45 : volatilityStrength) * 0.65 + transition * 0.35;
   return round(Math.max(0, Math.min(raw, 1)), 3);
 }
@@ -88,6 +97,8 @@ export function assessMarkovRegime(
   direction: Direction,
   options: MarkovRegimeOptions
 ): MarkovRegimeAssessment {
+  const volatileThreshold = options.volatileThreshold ?? DEFAULT_VOLATILE_THRESHOLD;
+  const sidewaysThreshold = options.sidewaysThreshold ?? DEFAULT_SIDEWAYS_THRESHOLD;
   const candles = [...contextCandles.slice(-90), ...higherContextCandles.slice(-60)];
   const returns = logReturns(candles).slice(-120);
 
@@ -110,13 +121,13 @@ export function assessMarkovRegime(
 
   const states: MarketRegime[] = [];
   for (let index = 24; index <= returns.length; index += 1) {
-    states.push(classifyWindow(returns.slice(index - 24, index)));
+    states.push(classifyWindow(returns.slice(index - 24, index), volatileThreshold, sidewaysThreshold));
   }
 
   const recentReturns = returns.slice(-36);
-  const regime = classifyWindow(recentReturns);
+  const regime = classifyWindow(recentReturns, volatileThreshold, sidewaysThreshold);
   const transition = transitionProbability(states, regime);
-  const confidence = confidenceFor(regime, recentReturns, transition);
+  const confidence = confidenceFor(regime, recentReturns, transition, volatileThreshold);
   const aligned = regime === "BULL" ? direction === "LONG" : regime === "BEAR" ? direction === "SHORT" : regime === "SIDEWAYS";
   const penalty = regime === "VOLATILE" ? options.volatilePenalty : aligned ? 0 : options.penalty;
   const meanReturn = average(recentReturns);

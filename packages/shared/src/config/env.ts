@@ -60,7 +60,7 @@ const envSchema = z.object({
   MAX_OPEN_TRADES: numberString(5),
   // Open trades allowed per symbol, so one coin can't hog the book.
   MAX_OPEN_TRADES_PER_SYMBOL: numberString(2),
-  MIN_CONFIDENCE_SCORE: numberString(75),
+  MIN_CONFIDENCE_SCORE: numberString(70),
   MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP: numberString(74),
   MAX_TRADES_PER_DAY: numberString(3),
   WORKER_INTERVAL_SECONDS: numberString(60),
@@ -84,6 +84,10 @@ const envSchema = z.object({
   // matching directional indicators passes clean.
   ADX_TREND_THRESHOLD: numberString(20),
   ADX_CHOP_PENALTY: numberString(15),
+  // Points a strong, directionally-aligned trend ADDS to the score (not just a
+  // chop penalty). Trend strength now contributes positively; weak or opposing
+  // ADX still subtracts ADX_CHOP_PENALTY.
+  ADX_TREND_BONUS: numberString(15),
   // OBV (volume-direction) confirmation: is buying/selling pressure flowing with
   // the trade? SMA length sets the trend baseline, momentum length the lookback
   // for rising/falling.
@@ -100,12 +104,36 @@ const envSchema = z.object({
   // and a setup scores at or above this, the weakest open trade in the binding
   // pool is closed to free a slot — but only if the newcomer outscores it.
   GOLDEN_SCORE: numberString(90),
+  // Keltner-based volatility modules. KELTNER_PERIOD is the shared EMA/Bollinger/
+  // ATR lookback. Extension gate: penalise entries already stretched
+  // EXTENSION_ATR_MULT * ATR beyond the mean in the trade direction (don't chase
+  // the top). Squeeze detector: when Bollinger compresses inside the Keltner
+  // Channel (width KELTNER_ATR_MULT) and releases with momentum, add SQUEEZE_BONUS.
+  KELTNER_PERIOD: numberString(20),
+  KELTNER_ATR_MULT: numberString(1.5),
+  EXTENSION_ATR_MULT: numberString(2.5),
+  EXTENSION_PENALTY: numberString(15),
+  SQUEEZE_ENABLED: booleanString.default("true"),
+  SQUEEZE_BB_K: numberString(2),
+  SQUEEZE_BONUS: numberString(15),
   // Daily report: once per local day, each worker posts its strategy's previous-day
   // summary (trades, winrate, P/L %, P/L money, profit factor, avg R) to Telegram.
   DAILY_REPORT_ENABLED: booleanString.default("true"),
   MARKOV_REGIME_ENABLED: booleanString.default("true"),
   MARKOV_REGIME_PENALTY: numberString(25),
   MARKOV_REGIME_VOLATILE_PENALTY: numberString(35),
+  // The two timeframes (context, higher context) the Markov regime model reads.
+  // Scalp reads the regime fast (15m,1h); swing reads it slow (4h,1d). Reading a
+  // scalp signal's regime off 1h/4h is too slow, so this is per-strategy.
+  MARKOV_CONTEXT_TIMEFRAMES: z
+    .string()
+    .default("1h,4h")
+    .transform((value) => value.split(",").map((timeframe) => timeframe.trim()).filter(Boolean)),
+  // Regime classification cutoffs (per-bar log-return scale). Faster timeframes
+  // carry more per-bar volatility, so scalp uses larger cutoffs or every bar reads
+  // as VOLATILE; swing uses smaller ones on its smoother bars.
+  MARKOV_VOLATILE_THRESHOLD: numberString(0.0075),
+  MARKOV_SIDEWAYS_THRESHOLD: numberString(0.00045),
   BOT_ENABLED: booleanString.default("true"),
   KILL_SWITCH: booleanString,
   DATABASE_URL: z.string().optional(),
