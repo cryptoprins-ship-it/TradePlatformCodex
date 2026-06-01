@@ -11,6 +11,20 @@ function parseFrom(value: string | string[] | undefined): Date | undefined {
   return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
+function fmtPrice(price: number | null): string {
+  if (price === null) return "—";
+  if (price >= 100) return price.toFixed(2);
+  if (price >= 1) return price.toFixed(4);
+  return price.toFixed(6);
+}
+
+const POS = "#3fb950";
+const NEG = "#f85149";
+function pnlColor(value: number | null): string {
+  if (value === null || value === 0) return "inherit";
+  return value > 0 ? POS : NEG;
+}
+
 export default async function DashboardPage({ searchParams }: { searchParams?: { from?: string | string[] } }) {
   const from = parseFrom(searchParams?.from);
   const data = await getDashboardData({ from });
@@ -57,6 +71,62 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
         <Metric label="Profit factor" value={data.profitFactor.toFixed(2)} />
         <Metric label="Average R/R" value={data.averageRiskReward.toFixed(2)} />
       </div>
+
+      <section className="panel" style={{ marginTop: 18 }}>
+        <h2>Open trades — live</h2>
+        <p className="muted">Current price vs entry. Unrealized P/L is direction-aware (a SHORT wins when price falls). Prices live from MEXC.</p>
+        <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Strategy</th>
+              <th>Symbol</th>
+              <th>Dir</th>
+              <th>TF</th>
+              <th>Score</th>
+              <th>Entry</th>
+              <th>Now</th>
+              <th>Unrealized</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.openTradesLive.length === 0 ? (
+              <tr><td colSpan={8} className="muted">No open trades right now.</td></tr>
+            ) : (
+              data.openTradesLive.map((t) => (
+                <tr key={t.id}>
+                  <td data-label="Strategy"><span className="cell-label">Strategy</span>{t.run}</td>
+                  <td data-label="Symbol"><span className="cell-label">Symbol</span>{t.symbol}</td>
+                  <td data-label="Dir"><span className="cell-label">Dir</span><span style={{ color: t.direction === "LONG" ? POS : NEG }}>{t.direction}</span></td>
+                  <td data-label="TF"><span className="cell-label">TF</span>{t.timeframe}</td>
+                  <td data-label="Score"><span className="cell-label">Score</span>{t.score}</td>
+                  <td data-label="Entry"><span className="cell-label">Entry</span>{fmtPrice(t.entry)}</td>
+                  <td data-label="Now"><span className="cell-label">Now</span>{fmtPrice(t.current)}</td>
+                  <td data-label="Unrealized"><span className="cell-label">Unrealized</span>
+                    <span style={{ color: pnlColor(t.unrealizedPct), fontWeight: 600 }}>
+                      {t.unrealizedPct === null ? "—" : `${t.unrealizedPct > 0 ? "+" : ""}${t.unrealizedPct.toFixed(2)}%`}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section className="panel" style={{ marginTop: 18 }}>
+        <h2>Prices — basket</h2>
+        <p className="muted">Live spot price per coin (MEXC).</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10 }}>
+          {data.prices.map((p) => (
+            <div key={p.symbol} style={{ border: "1px solid var(--line)", borderRadius: 6, padding: "8px 10px" }}>
+              <div className="cell-label">{p.symbol.replace("USDT", "")}</div>
+              <div style={{ fontWeight: 600 }}>{fmtPrice(p.price)}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="panel" style={{ marginTop: 18 }}>
         <h2>Risk status</h2>

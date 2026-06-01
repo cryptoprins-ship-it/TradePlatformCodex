@@ -28,6 +28,21 @@ async function summarizeSkipReasons(from?: Date): Promise<{ bucket: string; coun
   return rows.map((row) => ({ bucket: row.bucket, count: Number(row.count) }));
 }
 
+// Live spot prices from MEXC (public, no key). One call, filtered to the symbols
+// we need, so the dashboard can show where open trades stand right now.
+async function fetchPrices(symbols: string[]): Promise<Map<string, number>> {
+  if (symbols.length === 0) return new Map();
+  try {
+    const res = await fetch("https://api.mexc.com/api/v3/ticker/price", { cache: "no-store" });
+    if (!res.ok) return new Map();
+    const all = (await res.json()) as { symbol: string; price: string }[];
+    const wanted = new Set(symbols);
+    return new Map(all.filter((row) => wanted.has(row.symbol)).map((row) => [row.symbol, Number(row.price)]));
+  } catch {
+    return new Map();
+  }
+}
+
 type ConfigSnapshot = Record<string, unknown>;
 
 type RunSummary = {
@@ -238,6 +253,33 @@ export async function getDashboardData(options: { from?: Date } = {}) {
   const realizedPnlAmount = Number(realizedAgg._sum.pnlAmount ?? 0);
   const balance = startBalance + realizedPnlAmount;
 
+  // Live prices for the basket + per-open-trade unrealized P/L (is it going the
+  // right way right now?). Direction-aware: a SHORT profits when price falls.
+  const activeSymbols = symbols.map((symbol) => symbol.symbol);
+  const priceSymbols = Array.from(new Set([...activeSymbols, ...openTrades.map((trade) => trade.symbol)]));
+  const priceMap = await fetchPrices(priceSymbols);
+  const prices = activeSymbols
+    .map((symbol) => ({ symbol, price: priceMap.get(symbol) ?? null }))
+    .sort((a, b) => a.symbol.localeCompare(b.symbol));
+  const openTradesLive = openTrades.map((trade) => {
+    const current = priceMap.get(trade.symbol) ?? null;
+    const entry = Number(trade.entryPrice);
+    const unrealizedPct =
+      current !== null && entry > 0 ? ((current - entry) / entry) * 100 * (trade.direction === "LONG" ? 1 : -1) : null;
+    return {
+      id: trade.id,
+      run: trade.run?.name ?? "Legacy",
+      symbol: trade.symbol,
+      direction: trade.direction,
+      timeframe: trade.timeframe,
+      status: trade.status,
+      score: trade.confidenceScore,
+      entry,
+      current,
+      unrealizedPct
+    };
+  });
+
   const wins = closedTrades.filter((trade) => trade.result === "WIN").length;
   const losses = closedTrades.filter((trade) => trade.result === "LOSS").length;
   const grossProfit = closedTrades.reduce((sum, trade) => {
@@ -260,6 +302,8 @@ export async function getDashboardData(options: { from?: Date } = {}) {
     symbols,
     signals,
     openTrades,
+    openTradesLive,
+    prices,
     closedTrades,
     skippedSignals,
     skipReasonGroups,
