@@ -13,6 +13,7 @@ async function summarizeSkipReasons(from?: Date): Promise<{ bucket: string; coun
         WHEN reason LIKE 'max trades per day%' THEN 'Max trades/day'
         WHEN reason LIKE 'score %below required threshold%' THEN 'Below score threshold'
         WHEN reason LIKE 'daily loss limit%' THEN 'Daily loss limit'
+        WHEN reason LIKE 'duplicate setup%' THEN 'Duplicate setup'
         WHEN reason LIKE 'KILL_SWITCH%' THEN 'Kill switch'
         WHEN reason LIKE 'missing %' THEN 'Missing stop/target/entry'
         ELSE 'Other'

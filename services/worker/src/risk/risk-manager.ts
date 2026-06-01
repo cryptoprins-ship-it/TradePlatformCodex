@@ -40,6 +40,23 @@ export async function evaluateRisk(config: AppConfig, signal: PaperTradeInput): 
     reasons.push(`max open trades per symbol reached (${config.MAX_OPEN_TRADES_PER_SYMBOL})`);
   }
 
+  // De-duplicate the same setup: a persistent signal regenerates every cycle, so
+  // without this an unchanged setup would open a fresh trade each cycle (stacking
+  // 2x risk on one idea until the per-symbol cap stops it). One position per
+  // symbol+direction+timeframe per strategy.
+  const duplicateSetup = await prisma.trade.count({
+    where: {
+      ...runFilter,
+      symbol: signal.symbol,
+      direction: signal.direction,
+      timeframe: signal.timeframe,
+      status: { in: ["OPEN", "TP1_HIT"] }
+    }
+  });
+  if (duplicateSetup > 0) {
+    reasons.push(`duplicate setup already open (${signal.symbol} ${signal.direction} ${signal.timeframe})`);
+  }
+
   const todaysTrades = await prisma.trade.count({
     where: { ...runFilter, openedAt: { gte: startOfDay } }
   });
