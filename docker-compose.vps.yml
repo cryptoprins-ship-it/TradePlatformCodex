@@ -39,7 +39,11 @@ services:
       CONTEXT_TIMEFRAMES: 4h,1d
       EMA_FAST: "8"
       EMA_SLOW: "50"
-      ADX_TREND_THRESHOLD: "25"
+      # ADX 20 (was 25): on 1h, ADX rarely clears 25, so Intraday never earned the
+      # trend-strength bonus and capped ~15pts below Swing -> never reached the
+      # threshold. Matching Swing's 20 lets Intraday actually trade. Strategies
+      # still differ via EMA pair, extension cutoff, and entry timeframes.
+      ADX_TREND_THRESHOLD: "20"
       # Regime read on the higher timeframes. VWAP off (1h spans sessions).
       MARKOV_CONTEXT_TIMEFRAMES: 4h,1d
       MARKOV_VOLATILE_THRESHOLD: "0.006"
