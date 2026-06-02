@@ -55,7 +55,17 @@ export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "POLUSDT", // L2 / agglayer
   "ROSEUSDT", // privacy / AI
   "ENAUSDT", // synthetic dollar
-  "PENDLEUSDT" // yield / DeFi
+  "PENDLEUSDT", // yield / DeFi
+  "HBARUSDT", // L1 (enterprise / RWA)
+  "THETAUSDT", // media (video network)
+  "AUDIOUSDT", // media (music)
+  "HYPEUSDT", // derivatives / perps DEX
+  "SNXUSDT", // derivatives (synthetics)
+  "DYDXUSDT", // derivatives (perps)
+  "RUNEUSDT", // cross-chain liquidity
+  "AXLUSDT", // cross-chain / bridge
+  "MKRUSDT", // stablecoin / CDP (Maker)
+  "SKYUSDT" // stablecoin / CDP (Sky)
 ];
 
 const booleanString = z

@@ -8,6 +8,10 @@ export type CoinGroup =
   | "Layer 1"
   | "Layer 2"
   | "DeFi"
+  | "Derivatives"
+  | "Stablecoin / CDP"
+  | "Cross-chain"
+  | "Media"
   | "Staking"
   | "AI"
   | "Oracle"
@@ -69,7 +73,17 @@ export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
   AXSUSDT: "Gaming",
   DOGEUSDT: "Meme",
   TONUSDT: "Messaging / TON",
-  NOTUSDT: "Messaging / TON"
+  NOTUSDT: "Messaging / TON",
+  HBARUSDT: "Layer 1",
+  THETAUSDT: "Media",
+  AUDIOUSDT: "Media",
+  HYPEUSDT: "Derivatives",
+  SNXUSDT: "Derivatives",
+  DYDXUSDT: "Derivatives",
+  RUNEUSDT: "Cross-chain",
+  AXLUSDT: "Cross-chain",
+  MKRUSDT: "Stablecoin / CDP",
+  SKYUSDT: "Stablecoin / CDP"
 };
 
 // Resolve a symbol's group, tolerating unknown/legacy symbols (returns "Other").

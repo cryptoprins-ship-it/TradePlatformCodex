@@ -49,7 +49,17 @@ export type SupportedSymbol =
   | "POLUSDT"
   | "ROSEUSDT"
   | "ENAUSDT"
-  | "PENDLEUSDT";
+  | "PENDLEUSDT"
+  | "HBARUSDT"
+  | "THETAUSDT"
+  | "AUDIOUSDT"
+  | "HYPEUSDT"
+  | "SNXUSDT"
+  | "DYDXUSDT"
+  | "RUNEUSDT"
+  | "AXLUSDT"
+  | "MKRUSDT"
+  | "SKYUSDT";
 
 export interface Candle {
   symbol: SupportedSymbol;
