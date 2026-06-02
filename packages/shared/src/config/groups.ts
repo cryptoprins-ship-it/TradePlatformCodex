@@ -7,12 +7,11 @@ export type CoinGroup =
   | "Layer 0"
   | "Layer 1"
   | "Layer 2"
-  | "DeFi"
+  | "DeFi / Staking"
   | "Derivatives"
   | "Stablecoin / CDP"
   | "Cross-chain"
   | "Media"
-  | "Staking"
   | "AI"
   | "Oracle"
   | "DePIN / storage"
@@ -42,14 +41,14 @@ export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
   DOTUSDT: "Layer 0",
   ATOMUSDT: "Layer 0",
   INJUSDT: "Layer 1",
-  AAVEUSDT: "DeFi",
-  UNIUSDT: "DeFi",
-  JUPUSDT: "DeFi",
-  PENDLEUSDT: "DeFi",
-  ENAUSDT: "DeFi",
-  ENSOUSDT: "DeFi",
-  LDOUSDT: "Staking",
-  EIGENUSDT: "Staking",
+  AAVEUSDT: "DeFi / Staking",
+  UNIUSDT: "DeFi / Staking",
+  JUPUSDT: "DeFi / Staking",
+  PENDLEUSDT: "DeFi / Staking",
+  ENAUSDT: "DeFi / Staking",
+  ENSOUSDT: "DeFi / Staking",
+  LDOUSDT: "DeFi / Staking",
+  EIGENUSDT: "DeFi / Staking",
   TAOUSDT: "AI",
   FETUSDT: "AI",
   LINKUSDT: "Oracle",
