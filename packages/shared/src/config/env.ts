@@ -1,9 +1,12 @@
 import { z } from "zod";
 import type { SupportedSymbol } from "../types/trading";
 
-// Sector basket: one (or two for AI) liquid representative per crypto sector, all
-// verified live as USDT spot pairs on MEXC. Gold (PAXG/XAUT) is intentionally
-// absent — MEXC has no USDT pair for it.
+// Sector basket: two representatives per crypto sector — the market-cap leader
+// plus a higher-expectation pick — as USDT spot pairs on MEXC. NOTE: the gold,
+// oracle, L2, DePIN, staking, modular, DEX, storage and TON pairs were added at
+// the user's request and are NOT live-verified here — confirm each pair trades
+// on MEXC in your deployment, as the candle/ticker fetch errors for any symbol
+// MEXC does not list.
 export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "BTCUSDT", // L1 major / digital gold
   "ETHUSDT", // smart-contract L1
@@ -11,7 +14,7 @@ export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "XRPUSDT", // payments
   "BNBUSDT", // exchange token
   "DOGEUSDT", // meme
-  "PENGUUSDT", // NFT
+  "PENGUUSDT", // NFT / consumer
   "ZECUSDT", // privacy
   "WLDUSDT", // identity
   "TAOUSDT", // AI
@@ -22,7 +25,51 @@ export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "AXSUSDT", // gaming
   "BERAUSDT", // new L1
   "ENSOUSDT", // intent / DeFi infra
-  "GOLD(PAXG)USDT" // commodity — tokenized gold (MEXC's symbol literally has the parens)
+  "GOLD(PAXG)USDT", // gold — tokenized (MEXC's symbol literally has the parens)
+  "LINKUSDT", // oracle (mcap leader)
+  "PYTHUSDT", // oracle (high expectation)
+  "ARBUSDT", // layer-2 (mcap leader)
+  "OPUSDT", // layer-2 (high expectation)
+  "RENDERUSDT", // DePIN (mcap leader)
+  "LDOUSDT", // liquid staking (mcap leader)
+  "EIGENUSDT", // restaking (high expectation)
+  "TIAUSDT", // modular / DA (mcap leader)
+  "DYMUSDT", // modular / DA (high expectation)
+  "UNIUSDT", // DEX (mcap leader)
+  "JUPUSDT", // DEX (high expectation)
+  "FILUSDT", // storage (mcap leader)
+  "ARUSDT", // storage (high expectation)
+  "TONUSDT", // TON / messaging (mcap leader)
+  "NOTUSDT", // TON ecosystem (high expectation)
+  // Beaten-down high-potential plays (far below ATH, narrative still alive):
+  "ICPUSDT", // compute / AI
+  "NEARUSDT", // L1 / AI
+  "DOTUSDT", // L0 / interop
+  "AVAXUSDT", // L1
+  "ATOMUSDT", // interop
+  "GRTUSDT", // data / indexing
+  "STXUSDT", // BTC L2
+  "IMXUSDT", // gaming L2
+  "POLUSDT", // L2 / agglayer
+  "ROSEUSDT", // privacy / AI
+  "ENAUSDT", // synthetic dollar
+  "PENDLEUSDT", // yield / DeFi
+  "HBARUSDT", // L1 (enterprise / RWA)
+  "HYPEUSDT", // derivatives / perps DEX
+  "SNXUSDT", // derivatives (synthetics)
+  "DYDXUSDT", // derivatives (perps)
+  "RUNEUSDT", // cross-chain liquidity
+  "SKYUSDT", // stablecoin / CDP (Sky)
+  "ENSUSDT", // identity (naming)
+  "BLURUSDT", // NFT (marketplace)
+  "SANDUSDT", // gaming (metaverse)
+  "GALAUSDT", // gaming
+  "SHIBUSDT", // meme
+  "PEPEUSDT", // meme
+  "WIFUSDT", // meme (Solana)
+  "APEUSDT", // NFT (ApeCoin)
+  "SEIUSDT", // L1 (trading-focused)
+  "SUIUSDT" // L1 (Move)
 ];
 
 const booleanString = z
