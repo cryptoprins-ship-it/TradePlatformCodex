@@ -4,9 +4,9 @@ import type { SupportedSymbol } from "../types/trading";
 // truth the dashboard uses to break performance down per sector. Keep this in
 // sync with SUPPORTED_SYMBOLS (a test asserts every supported symbol is mapped).
 export type CoinGroup =
+  | "Layer 0"
   | "Layer 1"
   | "Layer 2"
-  | "Interop / infra"
   | "DeFi"
   | "Staking"
   | "AI"
@@ -35,15 +35,15 @@ export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
   POLUSDT: "Layer 2",
   IMXUSDT: "Layer 2",
   STXUSDT: "Layer 2",
-  INJUSDT: "Interop / infra",
-  DOTUSDT: "Interop / infra",
-  ATOMUSDT: "Interop / infra",
-  ENSOUSDT: "Interop / infra",
+  DOTUSDT: "Layer 0",
+  ATOMUSDT: "Layer 0",
+  INJUSDT: "Layer 1",
   AAVEUSDT: "DeFi",
   UNIUSDT: "DeFi",
   JUPUSDT: "DeFi",
   PENDLEUSDT: "DeFi",
   ENAUSDT: "DeFi",
+  ENSOUSDT: "DeFi",
   LDOUSDT: "Staking",
   EIGENUSDT: "Staking",
   TAOUSDT: "AI",
