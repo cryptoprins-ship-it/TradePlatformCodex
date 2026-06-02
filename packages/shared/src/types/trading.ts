@@ -59,7 +59,14 @@ export type SupportedSymbol =
   | "RUNEUSDT"
   | "AXLUSDT"
   | "MKRUSDT"
-  | "SKYUSDT";
+  | "SKYUSDT"
+  | "ENSUSDT"
+  | "BLURUSDT"
+  | "SANDUSDT"
+  | "GALAUSDT"
+  | "SHIBUSDT"
+  | "PEPEUSDT"
+  | "WIFUSDT";
 
 export interface Candle {
   symbol: SupportedSymbol;

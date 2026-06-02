@@ -65,7 +65,14 @@ export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "RUNEUSDT", // cross-chain liquidity
   "AXLUSDT", // cross-chain / bridge
   "MKRUSDT", // stablecoin / CDP (Maker)
-  "SKYUSDT" // stablecoin / CDP (Sky)
+  "SKYUSDT", // stablecoin / CDP (Sky)
+  "ENSUSDT", // identity (naming)
+  "BLURUSDT", // NFT (marketplace)
+  "SANDUSDT", // gaming (metaverse)
+  "GALAUSDT", // gaming
+  "SHIBUSDT", // meme
+  "PEPEUSDT", // meme
+  "WIFUSDT" // meme (Solana)
 ];
 
 const booleanString = z

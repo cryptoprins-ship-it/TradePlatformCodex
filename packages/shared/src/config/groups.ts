@@ -5,9 +5,11 @@ import type { SupportedSymbol } from "../types/trading";
 // sync with SUPPORTED_SYMBOLS (a test asserts every supported symbol is mapped).
 export type CoinGroup =
   | "Layer 0"
-  | "Layer 1"
+  | "Layer 1 — majors"
+  | "Layer 1 — niche"
   | "Layer 2"
-  | "DeFi / Staking"
+  | "DeFi — lending / DEX"
+  | "DeFi — yield / staking"
   | "Derivatives"
   | "Stablecoin / CDP"
   | "Cross-chain"
@@ -26,13 +28,13 @@ export type CoinGroup =
   | "Messaging / TON";
 
 export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
-  BTCUSDT: "Layer 1",
-  ETHUSDT: "Layer 1",
-  SOLUSDT: "Layer 1",
-  BERAUSDT: "Layer 1",
-  AVAXUSDT: "Layer 1",
-  NEARUSDT: "Layer 1",
-  ICPUSDT: "Layer 1",
+  BTCUSDT: "Layer 1 — majors",
+  ETHUSDT: "Layer 1 — majors",
+  SOLUSDT: "Layer 1 — majors",
+  AVAXUSDT: "Layer 1 — majors",
+  NEARUSDT: "Layer 1 — majors",
+  BERAUSDT: "Layer 1 — niche",
+  ICPUSDT: "Layer 1 — niche",
   ARBUSDT: "Layer 2",
   OPUSDT: "Layer 2",
   POLUSDT: "Layer 2",
@@ -40,15 +42,15 @@ export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
   STXUSDT: "Layer 2",
   DOTUSDT: "Layer 0",
   ATOMUSDT: "Layer 0",
-  INJUSDT: "Layer 1",
-  AAVEUSDT: "DeFi / Staking",
-  UNIUSDT: "DeFi / Staking",
-  JUPUSDT: "DeFi / Staking",
-  PENDLEUSDT: "DeFi / Staking",
-  ENAUSDT: "DeFi / Staking",
-  ENSOUSDT: "DeFi / Staking",
-  LDOUSDT: "DeFi / Staking",
-  EIGENUSDT: "DeFi / Staking",
+  INJUSDT: "Layer 1 — niche",
+  AAVEUSDT: "DeFi — lending / DEX",
+  UNIUSDT: "DeFi — lending / DEX",
+  JUPUSDT: "DeFi — lending / DEX",
+  ENSOUSDT: "DeFi — lending / DEX",
+  PENDLEUSDT: "DeFi — yield / staking",
+  ENAUSDT: "DeFi — yield / staking",
+  LDOUSDT: "DeFi — yield / staking",
+  EIGENUSDT: "DeFi — yield / staking",
   TAOUSDT: "AI",
   FETUSDT: "AI",
   LINKUSDT: "Oracle",
@@ -73,7 +75,7 @@ export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
   DOGEUSDT: "Meme",
   TONUSDT: "Messaging / TON",
   NOTUSDT: "Messaging / TON",
-  HBARUSDT: "Layer 1",
+  HBARUSDT: "Layer 1 — niche",
   THETAUSDT: "Media",
   AUDIOUSDT: "Media",
   HYPEUSDT: "Derivatives",
@@ -82,7 +84,14 @@ export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
   RUNEUSDT: "Cross-chain",
   AXLUSDT: "Cross-chain",
   MKRUSDT: "Stablecoin / CDP",
-  SKYUSDT: "Stablecoin / CDP"
+  SKYUSDT: "Stablecoin / CDP",
+  ENSUSDT: "Identity",
+  BLURUSDT: "NFT / consumer",
+  SANDUSDT: "Gaming",
+  GALAUSDT: "Gaming",
+  SHIBUSDT: "Meme",
+  PEPEUSDT: "Meme",
+  WIFUSDT: "Meme"
 };
 
 // Resolve a symbol's group, tolerating unknown/legacy symbols (returns "Other").

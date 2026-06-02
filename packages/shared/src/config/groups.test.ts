@@ -19,4 +19,15 @@ describe("symbol groups", () => {
   it("falls back to Other for unknown symbols", () => {
     expect(getSymbolGroup("FAKEUSDT")).toBe("Other");
   });
+
+  it("keeps every group between 2 and 5 coins", () => {
+    const counts = new Map<string, number>();
+    for (const group of Object.values(SYMBOL_GROUPS)) {
+      counts.set(group, (counts.get(group) ?? 0) + 1);
+    }
+    for (const [group, count] of counts) {
+      expect(count, `${group} has ${count} coins`).toBeGreaterThanOrEqual(2);
+      expect(count, `${group} has ${count} coins`).toBeLessThanOrEqual(5);
+    }
+  });
 });
