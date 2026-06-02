@@ -11,8 +11,6 @@ export type CoinGroup =
   | "DeFi — yield / staking"
   | "Derivatives"
   | "Stablecoin / CDP"
-  | "Cross-chain"
-  | "Media"
   | "AI"
   | "Oracle"
   | "DePIN / storage"
@@ -49,7 +47,6 @@ export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
   JUPUSDT: "DeFi — lending / DEX",
   ENSOUSDT: "DeFi — lending / DEX",
   PENDLEUSDT: "DeFi — yield / staking",
-  ENAUSDT: "DeFi — yield / staking",
   LDOUSDT: "DeFi — yield / staking",
   EIGENUSDT: "DeFi — yield / staking",
   TAOUSDT: "AI",
@@ -57,7 +54,6 @@ export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
   LINKUSDT: "Oracle",
   PYTHUSDT: "Oracle",
   RENDERUSDT: "DePIN / storage",
-  AKTUSDT: "DePIN / storage",
   FILUSDT: "DePIN / storage",
   ARUSDT: "DePIN / storage",
   GRTUSDT: "DePIN / storage",
@@ -69,22 +65,18 @@ export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
   XRPUSDT: "Payments / exchange",
   BNBUSDT: "Payments / exchange",
   ONDOUSDT: "RWA / gold",
-  PAXGUSDT: "RWA / gold",
-  XAUTUSDT: "RWA / gold",
+  "GOLD(PAXG)USDT": "RWA / gold",
   PENGUUSDT: "NFT / consumer",
   AXSUSDT: "Gaming",
   DOGEUSDT: "Meme",
   TONUSDT: "Messaging / TON",
   NOTUSDT: "Messaging / TON",
   HBARUSDT: "RWA / gold",
-  THETAUSDT: "Media",
-  AUDIOUSDT: "Media",
   HYPEUSDT: "Derivatives",
   SNXUSDT: "Derivatives",
   DYDXUSDT: "Derivatives",
-  RUNEUSDT: "Cross-chain",
-  AXLUSDT: "Cross-chain",
-  MKRUSDT: "Stablecoin / CDP",
+  RUNEUSDT: "DeFi — lending / DEX",
+  ENAUSDT: "Stablecoin / CDP",
   SKYUSDT: "Stablecoin / CDP",
   ENSUSDT: "Identity",
   BLURUSDT: "NFT / consumer",

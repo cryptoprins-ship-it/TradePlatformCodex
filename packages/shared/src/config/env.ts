@@ -25,14 +25,12 @@ export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "AXSUSDT", // gaming
   "BERAUSDT", // new L1
   "ENSOUSDT", // intent / DeFi infra
-  "PAXGUSDT", // gold (Pax Gold)
-  "XAUTUSDT", // gold (Tether Gold)
+  "GOLD(PAXG)USDT", // gold — tokenized (MEXC's symbol literally has the parens)
   "LINKUSDT", // oracle (mcap leader)
   "PYTHUSDT", // oracle (high expectation)
   "ARBUSDT", // layer-2 (mcap leader)
   "OPUSDT", // layer-2 (high expectation)
   "RENDERUSDT", // DePIN (mcap leader)
-  "AKTUSDT", // DePIN (high expectation)
   "LDOUSDT", // liquid staking (mcap leader)
   "EIGENUSDT", // restaking (high expectation)
   "TIAUSDT", // modular / DA (mcap leader)
@@ -57,14 +55,10 @@ export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "ENAUSDT", // synthetic dollar
   "PENDLEUSDT", // yield / DeFi
   "HBARUSDT", // L1 (enterprise / RWA)
-  "THETAUSDT", // media (video network)
-  "AUDIOUSDT", // media (music)
   "HYPEUSDT", // derivatives / perps DEX
   "SNXUSDT", // derivatives (synthetics)
   "DYDXUSDT", // derivatives (perps)
   "RUNEUSDT", // cross-chain liquidity
-  "AXLUSDT", // cross-chain / bridge
-  "MKRUSDT", // stablecoin / CDP (Maker)
   "SKYUSDT", // stablecoin / CDP (Sky)
   "ENSUSDT", // identity (naming)
   "BLURUSDT", // NFT (marketplace)
