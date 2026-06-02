@@ -147,6 +147,32 @@ function summarizeByGroup(closedTrades: TradeRow[]) {
     .sort((a, b) => b.pnl - a.pnl);
 }
 
+// Break closed trades down per coin (symbol) so the dashboard shows exactly
+// which coins make money. Carries the sector group for context. Sorted by P/L.
+function summarizeBySymbol(closedTrades: TradeRow[]) {
+  const symbols = new Map<string, TradeRow[]>();
+  for (const trade of closedTrades) {
+    const list = symbols.get(trade.symbol) ?? [];
+    list.push(trade);
+    symbols.set(trade.symbol, list);
+  }
+  return Array.from(symbols.entries())
+    .map(([symbol, trades]) => {
+      const perf = summarizeClosedTrades(trades);
+      const pnlAmount = trades.reduce((sum, trade) => sum + Number(trade.pnlAmount ?? 0), 0);
+      return {
+        symbol,
+        group: getSymbolGroup(symbol),
+        trades: trades.length,
+        winrate: perf.winrate,
+        pnl: perf.pnl,
+        pnlAmount,
+        profitFactor: perf.profitFactor
+      };
+    })
+    .sort((a, b) => b.pnl - a.pnl);
+}
+
 // Compare strategies (Scalp vs Swing) by grouping runs on their APP_NAME and
 // summarising each strategy's closed trades — winrate, P/L (% and money).
 async function summarizeByStrategy(closedFilter: object): Promise<
@@ -333,6 +359,7 @@ export async function getDashboardData(options: { from?: Date } = {}) {
     logs,
     regimeBreakdown: summarizeByRegime(closedTrades),
     groupBreakdown: summarizeByGroup(closedTrades),
+    symbolBreakdown: summarizeBySymbol(closedTrades),
     currentRegime:
       ((openTrades[0] ?? closedTrades[0]) as { entryRegime?: string | null } | undefined)?.entryRegime ?? null,
     winrate: wins + losses === 0 ? 0 : (wins / (wins + losses)) * 100,

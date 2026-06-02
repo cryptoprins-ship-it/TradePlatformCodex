@@ -276,6 +276,43 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
       </section>
 
       <section className="panel" style={{ marginTop: 18 }}>
+        <h2>Performance by coin</h2>
+        <p className="muted">Which individual coins make money. Sorted by P/L.</p>
+        <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Coin</th>
+              <th>Group</th>
+              <th>Closed trades</th>
+              <th>Winrate</th>
+              <th>P/L</th>
+              <th>P/L ($)</th>
+              <th>Profit factor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.symbolBreakdown.length === 0 ? (
+              <tr><td colSpan={7} className="muted">No closed trades yet.</td></tr>
+            ) : (
+              data.symbolBreakdown.map((row) => (
+                <tr key={row.symbol}>
+                  <td data-label="Coin"><span className="cell-label">Coin</span>{row.symbol.replace("USDT", "")}</td>
+                  <td data-label="Group"><span className="cell-label">Group</span>{row.group}</td>
+                  <td data-label="Closed trades"><span className="cell-label">Closed trades</span>{row.trades}</td>
+                  <td data-label="Winrate"><span className="cell-label">Winrate</span>{row.winrate.toFixed(1)}%</td>
+                  <td data-label="P/L"><span className="cell-label">P/L</span>{row.pnl.toFixed(2)}%</td>
+                  <td data-label="P/L ($)"><span className="cell-label">P/L ($)</span>{row.pnlAmount.toFixed(2)}</td>
+                  <td data-label="Profit factor"><span className="cell-label">Profit factor</span>{row.profitFactor.toFixed(2)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section className="panel" style={{ marginTop: 18 }}>
         <h2>Run comparison</h2>
         <div className="table-wrap">
         <table>
