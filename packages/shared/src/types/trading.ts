@@ -28,6 +28,7 @@ export type SupportedSymbol =
   | "RENDERUSDT"
   | "LDOUSDT"
   | "EIGENUSDT"
+  | "JTOUSDT"
   | "TIAUSDT"
   | "DYMUSDT"
   | "UNIUSDT"

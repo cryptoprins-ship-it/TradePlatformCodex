@@ -49,6 +49,7 @@ export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
   PENDLEUSDT: "DeFi — yield / staking",
   LDOUSDT: "DeFi — yield / staking",
   EIGENUSDT: "DeFi — yield / staking",
+  JTOUSDT: "DeFi — yield / staking",
   TAOUSDT: "AI",
   FETUSDT: "AI",
   LINKUSDT: "Oracle",

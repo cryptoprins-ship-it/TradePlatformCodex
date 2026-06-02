@@ -33,6 +33,7 @@ export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "RENDERUSDT", // DePIN (mcap leader)
   "LDOUSDT", // liquid staking (mcap leader)
   "EIGENUSDT", // restaking (high expectation)
+  "JTOUSDT", // Solana liquid staking / MEV (Jito)
   "TIAUSDT", // modular / DA (mcap leader)
   "DYMUSDT", // modular / DA (high expectation)
   "UNIUSDT", // DEX (mcap leader)
