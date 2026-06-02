@@ -21,7 +21,8 @@ export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "INJUSDT", // interop / infra
   "AXSUSDT", // gaming
   "BERAUSDT", // new L1
-  "ENSOUSDT" // intent / DeFi infra
+  "ENSOUSDT", // intent / DeFi infra
+  "GOLD(PAXG)USDT" // commodity — tokenized gold (MEXC's symbol literally has the parens)
 ];
 
 const booleanString = z
