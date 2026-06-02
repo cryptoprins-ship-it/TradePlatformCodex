@@ -131,8 +131,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
       <section className="panel" style={{ marginTop: 18 }}>
         <h2>Risk status</h2>
         <p className="muted">
-          Max risk per trade {data.config.MAX_RISK_PER_TRADE}%, max daily loss {data.config.MAX_DAILY_LOSS}%, max open trades{" "}
-          {data.config.MAX_OPEN_TRADES}, min confidence score {data.config.MIN_CONFIDENCE_SCORE}.
+          Max risk per trade {data.config.MAX_RISK_PER_TRADE}%, max daily loss {data.config.MAX_DAILY_LOSS}%, soft open-trades cap{" "}
+          {data.config.MAX_OPEN_TRADES} (confidence ramps +1 per trade past it), base confidence score {data.config.MIN_CONFIDENCE_SCORE}.
         </p>
         <p>
           <StatusPill label="MEXC read-only data" tone="good" />{" "}

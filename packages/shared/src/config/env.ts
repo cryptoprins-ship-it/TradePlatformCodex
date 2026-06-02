@@ -127,10 +127,15 @@ const envSchema = z.object({
   START_BALANCE: numberString(1000),
   MAX_RISK_PER_TRADE: numberString(1),
   MAX_DAILY_LOSS: numberString(3),
-  MAX_OPEN_TRADES: numberString(5),
+  // Soft cap (not a hard ceiling): below it, MIN_CONFIDENCE_SCORE applies; at/after
+  // it, the required score ramps +1 per extra open trade (see requiredConfidence in
+  // risk-manager). The book can grow past it, but only for progressively stronger
+  // setups; it resets as trades close and the open count falls back under the cap.
+  MAX_OPEN_TRADES: numberString(10),
   // Open trades allowed per symbol, so one coin can't hog the book.
   MAX_OPEN_TRADES_PER_SYMBOL: numberString(2),
-  MIN_CONFIDENCE_SCORE: numberString(70),
+  // Base confidence threshold (tier 1, below the soft open-trades cap).
+  MIN_CONFIDENCE_SCORE: numberString(67),
   MAX_SCORE_WITHOUT_LIQUIDITY_SWEEP: numberString(74),
   MAX_TRADES_PER_DAY: numberString(3),
   WORKER_INTERVAL_SECONDS: numberString(60),
