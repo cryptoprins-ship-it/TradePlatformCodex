@@ -27,13 +27,16 @@ describe("loadConfig", () => {
   it("accepts the full sector basket", () => {
     const config = loadConfig({
       ENABLE_LIVE_TRADING: "false",
-      SYMBOLS: "BTCUSDT,BNBUSDT,DOGEUSDT,ZECUSDT,TAOUSDT,FETUSDT,ONDOUSDT,AAVEUSDT,INJUSDT,AXSUSDT,BERAUSDT,ENSOUSDT,PENGUUSDT,PAXGUSDT,XAUTUSDT"
+      SYMBOLS: "BTCUSDT,BNBUSDT,DOGEUSDT,ZECUSDT,TAOUSDT,FETUSDT,ONDOUSDT,AAVEUSDT,INJUSDT,AXSUSDT,BERAUSDT,ENSOUSDT,PENGUUSDT,PAXGUSDT,XAUTUSDT,LINKUSDT,PYTHUSDT,ARBUSDT,OPUSDT,RENDERUSDT,AKTUSDT,LDOUSDT,EIGENUSDT,TIAUSDT,DYMUSDT,UNIUSDT,JUPUSDT,FILUSDT,ARUSDT,TONUSDT,NOTUSDT"
     });
 
     expect(config.SYMBOLS).toContain("AAVEUSDT");
     expect(config.SYMBOLS).toContain("PENGUUSDT");
     expect(config.SYMBOLS).toContain("PAXGUSDT");
     expect(config.SYMBOLS).toContain("XAUTUSDT");
+    expect(config.SYMBOLS).toContain("LINKUSDT");
+    expect(config.SYMBOLS).toContain("ARBUSDT");
+    expect(config.SYMBOLS).toContain("TONUSDT");
   });
 
   it("rejects unsupported symbols", () => {

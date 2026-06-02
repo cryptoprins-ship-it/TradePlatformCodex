@@ -21,7 +21,23 @@ export type SupportedSymbol =
   | "DOGEUSDT"
   | "AAVEUSDT"
   | "PAXGUSDT"
-  | "XAUTUSDT";
+  | "XAUTUSDT"
+  | "LINKUSDT"
+  | "PYTHUSDT"
+  | "ARBUSDT"
+  | "OPUSDT"
+  | "RENDERUSDT"
+  | "AKTUSDT"
+  | "LDOUSDT"
+  | "EIGENUSDT"
+  | "TIAUSDT"
+  | "DYMUSDT"
+  | "UNIUSDT"
+  | "JUPUSDT"
+  | "FILUSDT"
+  | "ARUSDT"
+  | "TONUSDT"
+  | "NOTUSDT";
 
 export interface Candle {
   symbol: SupportedSymbol;

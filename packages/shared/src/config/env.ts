@@ -1,10 +1,12 @@
 import { z } from "zod";
 import type { SupportedSymbol } from "../types/trading";
 
-// Sector basket: one (or two for AI and gold) liquid representative per crypto
-// sector, all USDT spot pairs on MEXC. NOTE: gold (PAXG/XAUT) was added at the
-// user's request — confirm both pairs trade on MEXC in your deployment, as the
-// candle/ticker fetch will error for any symbol MEXC does not list.
+// Sector basket: two representatives per crypto sector — the market-cap leader
+// plus a higher-expectation pick — as USDT spot pairs on MEXC. NOTE: the gold,
+// oracle, L2, DePIN, staking, modular, DEX, storage and TON pairs were added at
+// the user's request and are NOT live-verified here — confirm each pair trades
+// on MEXC in your deployment, as the candle/ticker fetch errors for any symbol
+// MEXC does not list.
 export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "BTCUSDT", // L1 major / digital gold
   "ETHUSDT", // smart-contract L1
@@ -12,7 +14,7 @@ export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "XRPUSDT", // payments
   "BNBUSDT", // exchange token
   "DOGEUSDT", // meme
-  "PENGUUSDT", // NFT
+  "PENGUUSDT", // NFT / consumer
   "ZECUSDT", // privacy
   "WLDUSDT", // identity
   "TAOUSDT", // AI
@@ -24,7 +26,23 @@ export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "BERAUSDT", // new L1
   "ENSOUSDT", // intent / DeFi infra
   "PAXGUSDT", // gold (Pax Gold)
-  "XAUTUSDT" // gold (Tether Gold)
+  "XAUTUSDT", // gold (Tether Gold)
+  "LINKUSDT", // oracle (mcap leader)
+  "PYTHUSDT", // oracle (high expectation)
+  "ARBUSDT", // layer-2 (mcap leader)
+  "OPUSDT", // layer-2 (high expectation)
+  "RENDERUSDT", // DePIN (mcap leader)
+  "AKTUSDT", // DePIN (high expectation)
+  "LDOUSDT", // liquid staking (mcap leader)
+  "EIGENUSDT", // restaking (high expectation)
+  "TIAUSDT", // modular / DA (mcap leader)
+  "DYMUSDT", // modular / DA (high expectation)
+  "UNIUSDT", // DEX (mcap leader)
+  "JUPUSDT", // DEX (high expectation)
+  "FILUSDT", // storage (mcap leader)
+  "ARUSDT", // storage (high expectation)
+  "TONUSDT", // TON / messaging (mcap leader)
+  "NOTUSDT" // TON ecosystem (high expectation)
 ];
 
 const booleanString = z
