@@ -1,4 +1,4 @@
-import { loadConfig } from "@tradeplatformcodex/shared";
+import { loadConfig, getSymbolGroup } from "@tradeplatformcodex/shared";
 import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 
@@ -124,6 +124,25 @@ function summarizeByRegime(closedTrades: TradeRow[]) {
     .map(([regime, trades]) => {
       const perf = summarizeClosedTrades(trades);
       return { regime, trades: trades.length, winrate: perf.winrate, pnl: perf.pnl, profitFactor: perf.profitFactor };
+    })
+    .sort((a, b) => b.pnl - a.pnl);
+}
+
+// Break closed trades down per sector group (Layer 1, DeFi, AI, …) so the
+// dashboard shows which coin groups the bot trades best. Sorted by P/L.
+function summarizeByGroup(closedTrades: TradeRow[]) {
+  const groups = new Map<string, TradeRow[]>();
+  for (const trade of closedTrades) {
+    const group = getSymbolGroup(trade.symbol);
+    const list = groups.get(group) ?? [];
+    list.push(trade);
+    groups.set(group, list);
+  }
+  return Array.from(groups.entries())
+    .map(([group, trades]) => {
+      const perf = summarizeClosedTrades(trades);
+      const pnlAmount = trades.reduce((sum, trade) => sum + Number(trade.pnlAmount ?? 0), 0);
+      return { group, trades: trades.length, winrate: perf.winrate, pnl: perf.pnl, pnlAmount, profitFactor: perf.profitFactor };
     })
     .sort((a, b) => b.pnl - a.pnl);
 }
@@ -313,6 +332,7 @@ export async function getDashboardData(options: { from?: Date } = {}) {
     balance,
     logs,
     regimeBreakdown: summarizeByRegime(closedTrades),
+    groupBreakdown: summarizeByGroup(closedTrades),
     currentRegime:
       ((openTrades[0] ?? closedTrades[0]) as { entryRegime?: string | null } | undefined)?.entryRegime ?? null,
     winrate: wins + losses === 0 ? 0 : (wins / (wins + losses)) * 100,
