@@ -73,7 +73,9 @@ export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "SHIBUSDT", // meme
   "PEPEUSDT", // meme
   "WIFUSDT", // meme (Solana)
-  "APEUSDT" // NFT (ApeCoin)
+  "APEUSDT", // NFT (ApeCoin)
+  "SEIUSDT", // L1 (trading-focused)
+  "SUIUSDT" // L1 (Move)
 ];
 
 const booleanString = z

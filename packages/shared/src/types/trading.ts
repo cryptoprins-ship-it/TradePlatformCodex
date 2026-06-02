@@ -67,7 +67,9 @@ export type SupportedSymbol =
   | "SHIBUSDT"
   | "PEPEUSDT"
   | "WIFUSDT"
-  | "APEUSDT";
+  | "APEUSDT"
+  | "SEIUSDT"
+  | "SUIUSDT";
 
 export interface Candle {
   symbol: SupportedSymbol;

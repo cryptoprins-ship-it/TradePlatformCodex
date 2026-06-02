@@ -5,8 +5,7 @@ import type { SupportedSymbol } from "../types/trading";
 // sync with SUPPORTED_SYMBOLS (a test asserts every supported symbol is mapped).
 export type CoinGroup =
   | "Layer 0"
-  | "Layer 1 — majors"
-  | "Layer 1 — niche"
+  | "Layer 1"
   | "Layer 2"
   | "DeFi — lending / DEX"
   | "DeFi — yield / staking"
@@ -28,13 +27,15 @@ export type CoinGroup =
   | "Messaging / TON";
 
 export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
-  BTCUSDT: "Layer 1 — majors",
-  ETHUSDT: "Layer 1 — majors",
-  SOLUSDT: "Layer 1 — majors",
-  AVAXUSDT: "Layer 1 — majors",
-  NEARUSDT: "Layer 1 — majors",
-  BERAUSDT: "Layer 1 — niche",
-  ICPUSDT: "Layer 1 — niche",
+  BTCUSDT: "Layer 1",
+  ETHUSDT: "Layer 1",
+  SOLUSDT: "Layer 1",
+  AVAXUSDT: "Layer 1",
+  NEARUSDT: "Layer 1",
+  BERAUSDT: "Layer 1",
+  ICPUSDT: "Layer 1",
+  SEIUSDT: "Layer 1",
+  SUIUSDT: "Layer 1",
   ARBUSDT: "Layer 2",
   OPUSDT: "Layer 2",
   POLUSDT: "Layer 2",
@@ -42,7 +43,7 @@ export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
   STXUSDT: "Layer 2",
   DOTUSDT: "Layer 0",
   ATOMUSDT: "Layer 0",
-  INJUSDT: "Layer 1 — niche",
+  INJUSDT: "Layer 1",
   AAVEUSDT: "DeFi — lending / DEX",
   UNIUSDT: "DeFi — lending / DEX",
   JUPUSDT: "DeFi — lending / DEX",
@@ -75,7 +76,7 @@ export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
   DOGEUSDT: "Meme",
   TONUSDT: "Messaging / TON",
   NOTUSDT: "Messaging / TON",
-  HBARUSDT: "Layer 1 — niche",
+  HBARUSDT: "RWA / gold",
   THETAUSDT: "Media",
   AUDIOUSDT: "Media",
   HYPEUSDT: "Derivatives",

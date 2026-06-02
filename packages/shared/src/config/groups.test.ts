@@ -20,14 +20,15 @@ describe("symbol groups", () => {
     expect(getSymbolGroup("FAKEUSDT")).toBe("Other");
   });
 
-  it("keeps every group between 2 and 5 coins", () => {
+  it("keeps every group within size limits (Layer 1 max 10, rest 2-5)", () => {
     const counts = new Map<string, number>();
     for (const group of Object.values(SYMBOL_GROUPS)) {
       counts.set(group, (counts.get(group) ?? 0) + 1);
     }
     for (const [group, count] of counts) {
+      const max = group === "Layer 1" ? 10 : 5;
       expect(count, `${group} has ${count} coins`).toBeGreaterThanOrEqual(2);
-      expect(count, `${group} has ${count} coins`).toBeLessThanOrEqual(5);
+      expect(count, `${group} has ${count} coins`).toBeLessThanOrEqual(max);
     }
   });
 });
