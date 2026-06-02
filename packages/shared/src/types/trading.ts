@@ -37,7 +37,19 @@ export type SupportedSymbol =
   | "FILUSDT"
   | "ARUSDT"
   | "TONUSDT"
-  | "NOTUSDT";
+  | "NOTUSDT"
+  | "ICPUSDT"
+  | "NEARUSDT"
+  | "DOTUSDT"
+  | "AVAXUSDT"
+  | "ATOMUSDT"
+  | "GRTUSDT"
+  | "STXUSDT"
+  | "IMXUSDT"
+  | "POLUSDT"
+  | "ROSEUSDT"
+  | "ENAUSDT"
+  | "PENDLEUSDT";
 
 export interface Candle {
   symbol: SupportedSymbol;

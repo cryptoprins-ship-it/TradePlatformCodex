@@ -42,7 +42,20 @@ export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "FILUSDT", // storage (mcap leader)
   "ARUSDT", // storage (high expectation)
   "TONUSDT", // TON / messaging (mcap leader)
-  "NOTUSDT" // TON ecosystem (high expectation)
+  "NOTUSDT", // TON ecosystem (high expectation)
+  // Beaten-down high-potential plays (far below ATH, narrative still alive):
+  "ICPUSDT", // compute / AI
+  "NEARUSDT", // L1 / AI
+  "DOTUSDT", // L0 / interop
+  "AVAXUSDT", // L1
+  "ATOMUSDT", // interop
+  "GRTUSDT", // data / indexing
+  "STXUSDT", // BTC L2
+  "IMXUSDT", // gaming L2
+  "POLUSDT", // L2 / agglayer
+  "ROSEUSDT", // privacy / AI
+  "ENAUSDT", // synthetic dollar
+  "PENDLEUSDT" // yield / DeFi
 ];
 
 const booleanString = z
