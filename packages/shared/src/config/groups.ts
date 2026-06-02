@@ -91,7 +91,8 @@ export const SYMBOL_GROUPS: Record<SupportedSymbol, CoinGroup> = {
   GALAUSDT: "Gaming",
   SHIBUSDT: "Meme",
   PEPEUSDT: "Meme",
-  WIFUSDT: "Meme"
+  WIFUSDT: "Meme",
+  APEUSDT: "NFT / consumer"
 };
 
 // Resolve a symbol's group, tolerating unknown/legacy symbols (returns "Other").

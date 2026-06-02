@@ -72,7 +72,8 @@ export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "GALAUSDT", // gaming
   "SHIBUSDT", // meme
   "PEPEUSDT", // meme
-  "WIFUSDT" // meme (Solana)
+  "WIFUSDT", // meme (Solana)
+  "APEUSDT" // NFT (ApeCoin)
 ];
 
 const booleanString = z
