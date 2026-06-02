@@ -19,7 +19,9 @@ export type SupportedSymbol =
   | "FETUSDT"
   | "BNBUSDT"
   | "DOGEUSDT"
-  | "AAVEUSDT";
+  | "AAVEUSDT"
+  | "PAXGUSDT"
+  | "XAUTUSDT";
 
 export interface Candle {
   symbol: SupportedSymbol;

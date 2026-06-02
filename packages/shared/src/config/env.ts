@@ -1,9 +1,10 @@
 import { z } from "zod";
 import type { SupportedSymbol } from "../types/trading";
 
-// Sector basket: one (or two for AI) liquid representative per crypto sector, all
-// verified live as USDT spot pairs on MEXC. Gold (PAXG/XAUT) is intentionally
-// absent — MEXC has no USDT pair for it.
+// Sector basket: one (or two for AI and gold) liquid representative per crypto
+// sector, all USDT spot pairs on MEXC. NOTE: gold (PAXG/XAUT) was added at the
+// user's request — confirm both pairs trade on MEXC in your deployment, as the
+// candle/ticker fetch will error for any symbol MEXC does not list.
 export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "BTCUSDT", // L1 major / digital gold
   "ETHUSDT", // smart-contract L1
@@ -21,7 +22,9 @@ export const SUPPORTED_SYMBOLS: SupportedSymbol[] = [
   "INJUSDT", // interop / infra
   "AXSUSDT", // gaming
   "BERAUSDT", // new L1
-  "ENSOUSDT" // intent / DeFi infra
+  "ENSOUSDT", // intent / DeFi infra
+  "PAXGUSDT", // gold (Pax Gold)
+  "XAUTUSDT" // gold (Tether Gold)
 ];
 
 const booleanString = z
